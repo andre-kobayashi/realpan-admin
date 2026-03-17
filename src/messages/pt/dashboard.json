@@ -1,0 +1,11 @@
+{
+  "title": "Dashboard",
+  "welcome": "Bem-vindo de volta",
+  "totalProducts": "Total de Produtos",
+  "totalOrders": "Total de Pedidos",
+  "totalCustomers": "Total de Clientes",
+  "totalRevenue": "Receita Total",
+  "recentOrders": "Pedidos Recentes",
+  "lowStock": "Produtos com Estoque Baixo",
+  "pendingApprovals": "Clientes PJ Pendentes"
+}

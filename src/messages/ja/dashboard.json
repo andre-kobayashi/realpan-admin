@@ -1,0 +1,11 @@
+{
+  "title": "ダッシュボード",
+  "welcome": "おかえりなさい",
+  "totalProducts": "総製品数",
+  "totalOrders": "総注文数",
+  "totalCustomers": "総顧客数",
+  "totalRevenue": "総収益",
+  "recentOrders": "最近の注文",
+  "lowStock": "在庫不足の製品",
+  "pendingApprovals": "承認待ちの法人顧客"
+}

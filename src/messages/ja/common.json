@@ -1,0 +1,30 @@
+{
+  "nav": {
+    "dashboard": "ダッシュボード",
+    "products": "製品",
+    "categories": "カテゴリ",
+    "orders": "注文",
+    "customers": "顧客",
+    "settings": "設定",
+    "logout": "ログアウト"
+  },
+  "actions": {
+    "create": "作成",
+    "edit": "編集",
+    "delete": "削除",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "search": "検索",
+    "filter": "フィルター",
+    "export": "エクスポート",
+    "import": "インポート",
+    "refresh": "更新"
+  },
+  "status": {
+    "active": "アクティブ",
+    "inactive": "非アクティブ",
+    "pending": "保留中",
+    "approved": "承認済み",
+    "rejected": "却下"
+  }
+}

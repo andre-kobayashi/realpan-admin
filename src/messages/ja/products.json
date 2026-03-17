@@ -1,0 +1,29 @@
+{
+  "title": "製品",
+  "addProduct": "製品を追加",
+  "editProduct": "製品を編集",
+  "productName": "製品名",
+  "productNamePt": "製品名（ポルトガル語）",
+  "productNameJa": "製品名（日本語）",
+  "hinban": "品番",
+  "category": "カテゴリ",
+  "originalPrice": "元価格 (¥)",
+  "stock": "在庫",
+  "storageType": "保管タイプ",
+  "images": "画像",
+  "primaryImage": "メイン画像",
+  "description": "説明",
+  "descriptionPt": "説明（ポルトガル語）",
+  "descriptionJa": "説明（日本語）",
+  "isActive": "アクティブ",
+  "isFeatured": "おすすめ",
+  "seo": "SEO",
+  "metaTitle": "メタタイトル",
+  "metaDescription": "メタ説明",
+  "storageTypes": {
+    "AMBIENT": "常温",
+    "FROZEN_READY": "冷凍（調理済み）",
+    "FROZEN_RAW": "冷凍（生）",
+    "REFRIGERATED": "冷蔵"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "title": "Produtos",
+  "addProduct": "Adicionar Produto",
+  "editProduct": "Editar Produto",
+  "productName": "Nome do Produto",
+  "productNamePt": "Nome (Português)",
+  "productNameJa": "Nome (Japonês)",
+  "hinban": "Hinban",
+  "category": "Categoria",
+  "originalPrice": "Preço Original (¥)",
+  "stock": "Estoque",
+  "storageType": "Tipo de Armazenamento",
+  "images": "Imagens",
+  "primaryImage": "Imagem Principal",
+  "description": "Descrição",
+  "descriptionPt": "Descrição (Português)",
+  "descriptionJa": "Descrição (Japonês)",
+  "isActive": "Ativo",
+  "isFeatured": "Destaque",
+  "seo": "SEO",
+  "metaTitle": "Meta Título",
+  "metaDescription": "Meta Descrição",
+  "storageTypes": {
+    "AMBIENT": "Ambiente",
+    "FROZEN_READY": "Congelado Pronto",
+    "FROZEN_RAW": "Congelado Cru",
+    "REFRIGERATED": "Refrigerado"
+  }
+}

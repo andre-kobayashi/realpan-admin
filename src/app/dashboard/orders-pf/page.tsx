@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Search, Package, Clock, CheckCircle, Truck, Eye, Edit, XCircle, Printer, FileText, Receipt } from 'lucide-react';
+import { Plus, Search, Package, Clock, CheckCircle, Truck, Eye, Edit, XCircle, Printer, FileText, Receipt, Mail, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import type { Order, ApiResponse } from '@/types';
@@ -20,6 +20,24 @@ const statusConfig = {
 
 function openDocument(orderId: string, type: 'nouhinsho' | 'seikyusho' | 'ryoushusho') {
   window.open(`${API_URL}/api/documents/${type}/${orderId}/html`, '_blank');
+}
+
+
+
+// Send document by email
+async function sendDocumentEmail(orderId: string, type: 'nouhinsho' | 'seikyusho' | 'ryoushusho') {
+  const typeLabels: Record<string, string> = { nouhinsho: '納品書', seikyusho: '請求書', ryoushusho: '領収書' };
+  if (!confirm(`${typeLabels[type]}をメールで送信しますか？\nEnviar ${typeLabels[type]} por email?`)) return;
+  try {
+    const res = await api.post(`/api/documents/${type}/${orderId}/email`);
+    if (res.data.success) {
+      alert(`✅ ${typeLabels[type]}を送信しました！\n${typeLabels[type]} enviado com sucesso!`);
+    } else {
+      alert(`❌ エラー: ${res.data.error || 'Unknown error'}`);
+    }
+  } catch (err: any) {
+    alert(`❌ 送信失敗: ${err.response?.data?.message?.ja || err.message}`);
+  }
 }
 
 export default function OrdersPFPage() {
@@ -257,22 +275,40 @@ export default function OrdersPFPage() {
               <div className="border-t border-gray-200 pt-4">
                 <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2"><FileText className="h-4 w-4" /> 帳票発行</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-                  <button type="button" onClick={() => openDocument(selectedOrder.id, 'nouhinsho')}
-                    className="flex flex-col items-center gap-1.5 p-3 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100">
-                    <Receipt className="h-5 w-5 text-blue-600" /><span className="text-xs font-semibold text-blue-800">納品書</span>
-                  </button>
-                  <button type="button" onClick={() => openDocument(selectedOrder.id, 'seikyusho')}
-                    className="flex flex-col items-center gap-1.5 p-3 bg-orange-50 border border-orange-200 rounded-xl hover:bg-orange-100">
-                    <FileText className="h-5 w-5 text-orange-600" /><span className="text-xs font-semibold text-orange-800">請求書</span>
-                  </button>
+                  <div className="flex flex-col gap-1">
+                    <button type="button" onClick={() => openDocument(selectedOrder.id, 'nouhinsho')}
+                      className="flex flex-col items-center gap-1.5 p-3 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100">
+                      <Receipt className="h-5 w-5 text-blue-600" /><span className="text-xs font-semibold text-blue-800">納品書</span>
+                    </button>
+                    <button type="button" onClick={() => sendDocumentEmail(selectedOrder.id, 'nouhinsho')}
+                      className="flex items-center justify-center gap-1 py-1.5 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100" title="メールで送信">
+                      <Mail className="h-3.5 w-3.5 text-blue-600" /><span className="text-[10px] text-blue-600">送信</span>
+                    </button>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <button type="button" onClick={() => openDocument(selectedOrder.id, 'seikyusho')}
+                      className="flex flex-col items-center gap-1.5 p-3 bg-orange-50 border border-orange-200 rounded-xl hover:bg-orange-100">
+                      <FileText className="h-5 w-5 text-orange-600" /><span className="text-xs font-semibold text-orange-800">請求書</span>
+                    </button>
+                    <button type="button" onClick={() => sendDocumentEmail(selectedOrder.id, 'seikyusho')}
+                      className="flex items-center justify-center gap-1 py-1.5 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100" title="メールで送信">
+                      <Mail className="h-3.5 w-3.5 text-orange-600" /><span className="text-[10px] text-orange-600">送信</span>
+                    </button>
+                  </div>
                   <button type="button" onClick={() => setShowPickingList(selectedOrder)}
                     className="flex flex-col items-center gap-1.5 p-3 bg-green-50 border border-green-200 rounded-xl hover:bg-green-100">
                     <Printer className="h-5 w-5 text-green-600" /><span className="text-xs font-semibold text-green-800">ピッキング</span>
                   </button>
-                  <button type="button" onClick={() => openDocument(selectedOrder.id, 'ryoushusho')}
-                    className="flex flex-col items-center gap-1.5 p-3 bg-teal-50 border border-teal-200 rounded-xl hover:bg-teal-100">
-                    <Receipt className="h-5 w-5 text-teal-600" /><span className="text-xs font-semibold text-teal-800">領収書</span>
-                  </button>
+                  <div className="flex flex-col gap-1">
+                    <button type="button" onClick={() => openDocument(selectedOrder.id, 'ryoushusho')}
+                      className="flex flex-col items-center gap-1.5 p-3 bg-teal-50 border border-teal-200 rounded-xl hover:bg-teal-100">
+                      <Receipt className="h-5 w-5 text-teal-600" /><span className="text-xs font-semibold text-teal-800">領収書</span>
+                    </button>
+                    <button type="button" onClick={() => sendDocumentEmail(selectedOrder.id, 'ryoushusho')}
+                      className="flex items-center justify-center gap-1 py-1.5 bg-teal-50 border border-teal-200 rounded-lg hover:bg-teal-100" title="メールで送信">
+                      <Mail className="h-3.5 w-3.5 text-teal-600" /><span className="text-[10px] text-teal-600">送信</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Building2, FileText, Calendar, Percent, Search, Lock, Eye, EyeOff, RefreshCw, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Building2, FileText, Calendar, Percent, Search, Lock, Eye, EyeOff, RefreshCw, Copy, Check, CreditCard, Send } from 'lucide-react';
 import api from '@/lib/api';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 
@@ -13,21 +13,27 @@ function generatePassword(): string {
   return pwd;
 }
 
+const PAYMENT_METHODS = [
+  { value: 'INVOICE', label: '請求書払い', labelPt: 'Faturamento mensal', icon: '📄' },
+  { value: 'DAIBIKI', label: '代引き', labelPt: 'Pagamento na entrega', icon: '🚚' },
+  { value: 'BANK_TRANSFER', label: '銀行振込', labelPt: 'Depósito antecipado', icon: '🏦' },
+  { value: 'CASH', label: '現金', labelPt: 'Dinheiro (retirada)', icon: '💴' },
+];
+
 export default function NewCustomerPJPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [loadingZipcode, setLoadingZipcode] = useState(false);
   const [showPassword, setShowPassword] = useState(true);
   const [copiedPassword, setCopiedPassword] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
   const [formData, setFormData] = useState({
     businessType: 'HOUJIN',
     companyName: '',
     companyNameKana: '',
-    houjinBangou: '',
+    customerCode: '',
     invoiceNumber: '',
-    representativeName: '',
-    firstName: '',
-    lastName: '',
+    contactName: '',
     email: '',
     phone: '',
     phoneAlt: '',
@@ -45,14 +51,21 @@ export default function NewCustomerPJPage() {
     creditLimit: '',
     businessStatus: 'APPROVED',
     contractNotes: '',
+    allowedPaymentMethods: ['INVOICE'] as string[],
   });
+
+  const togglePaymentMethod = (method: string) => {
+    setFormData(prev => ({
+      ...prev,
+      allowedPaymentMethods: prev.allowedPaymentMethods.includes(method)
+        ? prev.allowedPaymentMethods.filter(m => m !== method)
+        : [...prev.allowedPaymentMethods, method],
+    }));
+  };
 
   const handleZipcodeSearch = async () => {
     const cleanZip = formData.postalCode.replace(/[-\s]/g, '');
-    if (cleanZip.length < 7) {
-      alert('CEP completo (7 dígitos)');
-      return;
-    }
+    if (cleanZip.length < 7) { alert('CEP completo (7 dígitos)'); return; }
     setLoadingZipcode(true);
     try {
       const response = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${cleanZip}`);
@@ -60,9 +73,7 @@ export default function NewCustomerPJPage() {
       if (data.status === 200 && data.results?.length > 0) {
         const r = data.results[0];
         setFormData(prev => ({ ...prev, prefecture: r.address1, city: r.address2, ward: r.address3 || '' }));
-      } else {
-        alert('CEP não encontrado');
-      }
+      } else { alert('CEP não encontrado'); }
     } catch { alert('Erro ao buscar CEP'); }
     finally { setLoadingZipcode(false); }
   };
@@ -79,19 +90,29 @@ export default function NewCustomerPJPage() {
       alert('Senha provisória deve ter no mínimo 6 caracteres');
       return;
     }
+    if (!formData.contactName.trim()) {
+      alert('Nome do contato é obrigatório');
+      return;
+    }
     setLoading(true);
     try {
+      // Split contactName into firstName/lastName for backward compat
+      const nameParts = formData.contactName.trim().split(/\s+/);
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+
       const payload = {
         type: 'BUSINESS',
         businessType: formData.businessType,
         businessStatus: formData.businessStatus,
         companyName: formData.companyName,
         companyNameKana: formData.companyNameKana,
-        houjinBangou: formData.houjinBangou || null,
+        customerCode: formData.customerCode || null,
         invoiceNumber: formData.invoiceNumber || null,
-        representativeName: formData.representativeName || null,
-        firstName: formData.firstName || null,
-        lastName: formData.lastName || null,
+        contactName: formData.contactName,
+        firstName: firstName || null,
+        lastName: lastName || null,
+        representativeName: formData.contactName || null,
         email: formData.email,
         phone: formData.phone,
         phoneAlt: formData.phoneAlt || null,
@@ -108,12 +129,30 @@ export default function NewCustomerPJPage() {
         paymentTerms: parseInt(formData.paymentTerms),
         creditLimit: formData.creditLimit ? parseInt(formData.creditLimit) : null,
         contractNotes: formData.contractNotes || null,
+        allowedPaymentMethods: formData.allowedPaymentMethods,
       };
-      await api.post('/api/customers', payload);
+      const { data } = await api.post('/api/customers', payload);
+      const customerId = data.data?.id;
+
+      // Perguntar se quer enviar email
+      if (customerId && confirm('Cliente cadastrado! Deseja enviar email com credenciais de acesso?')) {
+        setSendingEmail(true);
+        try {
+          await api.post(`/api/customers/${customerId}/send-credentials`, {
+            tempPassword: formData.password,
+          });
+          alert('Email enviado com sucesso!');
+        } catch (err) {
+          alert('Cliente cadastrado, mas erro ao enviar email. Envie manualmente.');
+        }
+        setSendingEmail(false);
+      }
+
       router.push('/dashboard/customers-pj');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao cadastrar cliente PJ:', error);
-      alert('Erro ao cadastrar cliente');
+      const msg = error.response?.data?.message?.pt || 'Erro ao cadastrar cliente';
+      alert(msg);
     } finally {
       setLoading(false);
     }
@@ -180,49 +219,35 @@ export default function NewCustomerPJPage() {
                     placeholder="例: レアルパン" />
                 </div>
               </div>
-              {formData.businessType === 'HOUJIN' && (
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">法人番号 (Houjin Bangou)</label>
-                  <input type="text" maxLength={13} value={formData.houjinBangou}
-                    onChange={(e) => setFormData({ ...formData, houjinBangou: e.target.value.replace(/\D/g, '') })}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 font-mono"
-                    placeholder="0000000000000 (13 dígitos)" />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Código do Cliente / 顧客コード</label>
+                  <input type="text" maxLength={6} value={formData.customerCode}
+                    onChange={(e) => setFormData({ ...formData, customerCode: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 font-mono text-lg tracking-wider"
+                    placeholder="Ex: 341, 341-R" />
+                  <p className="text-xs text-gray-500 mt-1">Código interno até 6 caracteres (números, letras, traços)</p>
                 </div>
-              )}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Invoice Number (適格請求書発行事業者)</label>
-                <input type="text" value={formData.invoiceNumber}
-                  onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 font-mono"
-                  placeholder="T0000000000000" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Representante Legal / 代表者名</label>
-                <input type="text" value={formData.representativeName}
-                  onChange={(e) => setFormData({ ...formData, representativeName: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                  placeholder="Nome do responsável" />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Invoice Number (適格請求書発行事業者)</label>
+                  <input type="text" value={formData.invoiceNumber}
+                    onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 font-mono"
+                    placeholder="T0000000000000" />
+                </div>
               </div>
             </div>
 
-            {/* Contato + Acesso */}
+            {/* Contato e Acesso */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
               <h2 className="text-lg font-semibold text-gray-900">Contato e Acesso / 連絡先・ログイン</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">名 (Nome) *</label>
-                  <input type="text" required value={formData.firstName}
-                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                    placeholder="太郎" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">姓 (Sobrenome) *</label>
-                  <input type="text" required value={formData.lastName}
-                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                    placeholder="山田" />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Nome do Contato / 担当者名 *</label>
+                <input type="text" required value={formData.contactName}
+                  onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  placeholder="山田 太郎 / Yamada Taro" />
+                <p className="text-xs text-gray-500 mt-1">Pessoa responsável pelos pedidos e contato</p>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div className="col-span-2">
@@ -248,14 +273,14 @@ export default function NewCustomerPJPage() {
                   placeholder="090-0000-0000" />
               </div>
 
-              {/* ═══ SENHA PROVISÓRIA ═══ */}
+              {/* Senha Provisória */}
               <div className="border-t border-gray-100 pt-4 mt-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Lock className="h-4 w-4 text-amber-600" />
                   <label className="text-sm font-semibold text-gray-900">Senha Provisória / 仮パスワード *</label>
                 </div>
                 <p className="text-xs text-gray-500 mb-3">
-                  Esta senha será usada pelo cliente para o primeiro login. Envie por email ou telefone.
+                  Esta senha será usada pelo cliente para o primeiro login.
                 </p>
                 <div className="flex items-center gap-2">
                   <div className="relative flex-1">
@@ -346,7 +371,7 @@ export default function NewCustomerPJPage() {
             </div>
           </div>
 
-          {/* Sidebar */}
+          {/* ═══════════ SIDEBAR ═══════════ */}
           <div className="space-y-6">
             {/* Status */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
@@ -372,6 +397,35 @@ export default function NewCustomerPJPage() {
               </div>
             </div>
 
+            {/* Métodos de Pagamento */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <CreditCard className="h-5 w-5 text-gray-600" />
+                <h3 className="font-semibold text-gray-900">Pagamento / 支払方法</h3>
+              </div>
+              <p className="text-xs text-gray-500 mb-3">Métodos habilitados para este cliente</p>
+              <div className="space-y-2">
+                {PAYMENT_METHODS.map(pm => (
+                  <label key={pm.value} className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                    formData.allowedPaymentMethods.includes(pm.value) ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}>
+                    <input type="checkbox"
+                      checked={formData.allowedPaymentMethods.includes(pm.value)}
+                      onChange={() => togglePaymentMethod(pm.value)}
+                      className="w-4 h-4 text-blue-600 rounded" />
+                    <span className="text-lg">{pm.icon}</span>
+                    <div>
+                      <div className="font-medium text-gray-900 text-sm">{pm.label}</div>
+                      <div className="text-xs text-gray-500">{pm.labelPt}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+              {formData.allowedPaymentMethods.length === 0 && (
+                <p className="text-xs text-red-500 mt-2">Selecione pelo menos 1 método</p>
+              )}
+            </div>
+
             {/* Taxa de Desconto */}
             <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200 p-6">
               <div className="flex items-center gap-2 mb-4">
@@ -394,40 +448,42 @@ export default function NewCustomerPJPage() {
               </div>
             </div>
 
-            {/* Faturamento */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Calendar className="h-5 w-5 text-gray-600" />
-                <h3 className="font-semibold text-gray-900">Faturamento / 請求</h3>
+            {/* Faturamento - só mostra se INVOICE está habilitado */}
+            {formData.allowedPaymentMethods.includes('INVOICE') && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Calendar className="h-5 w-5 text-gray-600" />
+                  <h3 className="font-semibold text-gray-900">Faturamento / 請求</h3>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Dia de Fechamento / 締め日</label>
+                    <select value={formData.billingClosingDay} onChange={(e) => setFormData({ ...formData, billingClosingDay: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                      <option value="31">Fim do Mês (31)</option>
+                      <option value="5">Dia 5</option><option value="10">Dia 10</option>
+                      <option value="15">Dia 15</option><option value="20">Dia 20</option><option value="25">Dia 25</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Dia de Vencimento / 支払期限</label>
+                    <select value={formData.billingDueDay} onChange={(e) => setFormData({ ...formData, billingDueDay: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                      <option value="10">Dia 10 do mês seguinte</option><option value="15">Dia 15</option>
+                      <option value="20">Dia 20</option><option value="25">Dia 25</option><option value="30">Dia 30</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Prazo de Pagamento</label>
+                    <select value={formData.paymentTerms} onChange={(e) => setFormData({ ...formData, paymentTerms: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                      <option value="15">15 dias</option><option value="30">30 dias</option>
+                      <option value="45">45 dias</option><option value="60">60 dias</option>
+                    </select>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Dia de Fechamento / 締め日</label>
-                  <select value={formData.billingClosingDay} onChange={(e) => setFormData({ ...formData, billingClosingDay: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
-                    <option value="31">Fim do Mês (31)</option>
-                    <option value="5">Dia 5</option><option value="10">Dia 10</option>
-                    <option value="15">Dia 15</option><option value="20">Dia 20</option><option value="25">Dia 25</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Dia de Vencimento / 支払期限</label>
-                  <select value={formData.billingDueDay} onChange={(e) => setFormData({ ...formData, billingDueDay: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
-                    <option value="10">Dia 10 do mês seguinte</option><option value="15">Dia 15</option>
-                    <option value="20">Dia 20</option><option value="25">Dia 25</option><option value="30">Dia 30</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Prazo de Pagamento</label>
-                  <select value={formData.paymentTerms} onChange={(e) => setFormData({ ...formData, paymentTerms: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
-                    <option value="15">15 dias</option><option value="30">30 dias</option>
-                    <option value="45">45 dias</option><option value="60">60 dias</option>
-                  </select>
-                </div>
-              </div>
-            </div>
+            )}
 
             {/* Limite de Crédito */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
@@ -444,9 +500,9 @@ export default function NewCustomerPJPage() {
 
             {/* Botões */}
             <div className="space-y-3">
-              <button type="submit" disabled={loading}
+              <button type="submit" disabled={loading || sendingEmail || formData.allowedPaymentMethods.length === 0}
                 className="w-full px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 font-medium">
-                {loading ? 'Cadastrando...' : 'Cadastrar Cliente PJ'}
+                {loading ? 'Cadastrando...' : sendingEmail ? 'Enviando email...' : 'Cadastrar Cliente PJ'}
               </button>
               <button type="button" onClick={() => router.back()}
                 className="w-full px-6 py-3 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
@@ -456,7 +512,7 @@ export default function NewCustomerPJPage() {
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
-                <strong>Lembrete:</strong> Após cadastrar, envie ao cliente o email e a senha provisória para que ele possa fazer login e realizar pedidos.
+                <strong>Lembrete:</strong> Após cadastrar, o sistema perguntará se deseja enviar email com credenciais de acesso automaticamente.
               </p>
             </div>
           </div>

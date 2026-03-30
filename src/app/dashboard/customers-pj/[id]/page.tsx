@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import {
   ArrowLeft, Building2, Mail, Phone, MapPin, Calendar, Package,
   FileText, Receipt, Edit, Clock, CheckCircle, Truck, XCircle,
-  CreditCard, Banknote, TrendingUp
+  CreditCard, Banknote, TrendingUp, Send, KeyRound
 } from 'lucide-react';
 import api from '@/lib/api';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
@@ -179,6 +179,35 @@ export default function CustomerPJDetailPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'orders' | 'info' | 'billing'>('orders');
+  const [showCredModal, setShowCredModal] = useState(false);
+  const [credPassword, setCredPassword] = useState('');
+  const [credSalesRep, setCredSalesRep] = useState('');
+  const [sendingCred, setSendingCred] = useState(false);
+
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+    let pwd = '';
+    for (let i = 0; i < 8; i++) pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    setCredPassword(pwd);
+  };
+
+  const handleSendCredentials = async () => {
+    if (!credPassword) { generatePassword(); return; }
+    setSendingCred(true);
+    try {
+      await api.post(`/api/customers/${customerId}/send-credentials`, {
+        tempPassword: credPassword,
+        salesRepName: credSalesRep || undefined,
+      });
+      alert('Email enviado com sucesso! / メール送信完了！');
+      setShowCredModal(false);
+    } catch (err: any) {
+      alert('Erro ao enviar: ' + (err.response?.data?.message?.pt || err.message));
+    } finally {
+      setSendingCred(false);
+    }
+  };
+
 
   useEffect(() => { fetchData(); }, [customerId]);
   const fetchData = async () => {
@@ -221,7 +250,10 @@ export default function CustomerPJDetailPage() {
             <p className="text-gray-500 mt-1">{customer.companyNameKana || customer.email}</p>
           </div>
           <span className={`px-3 py-1 text-sm font-medium rounded-full ${bsColors[customer.businessStatus] || 'bg-gray-100'}`}>{bsLabels[customer.businessStatus] || customer.businessStatus}</span>
-          <button type="button" onClick={() => router.push(`/dashboard/customers-pj/${customerId}/edit`)} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"><Edit className="h-4 w-4" /> 編集 / Editar</button>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => { generatePassword(); setShowCredModal(true); }} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"><Send className="h-4 w-4" /> Enviar Credenciais</button>
+            <button type="button" onClick={() => router.push(`/dashboard/customers-pj/${customerId}/edit`)} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"><Edit className="h-4 w-4" /> 編集 / Editar</button>
+          </div>
         </div>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -283,6 +315,48 @@ export default function CustomerPJDetailPage() {
           {activeTab === 'billing' && (<BillingTab customerId={customerId} orders={orders} monthlyOrders={monthlyOrders} statusConfig={statusConfig} openDocument={openDocument} openMatomete={openMatomete} />)}
         </div>
       </div>
+    
+      {/* Modal Enviar Credenciais */}
+      {showCredModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowCredModal(false)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-4">
+              <KeyRound className="h-5 w-5 text-blue-600" />
+              Enviar Credenciais / 認証情報送信
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Email de boas-vindas com login e senha provisória será enviado para:<br/>
+              <strong className="text-gray-900">{customer?.email}</strong>
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Senha Provisória / 仮パスワード</label>
+                <div className="flex gap-2 mt-1">
+                  <input type="text" value={credPassword} onChange={(e) => setCredPassword(e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg font-mono text-lg tracking-wider" readOnly />
+                  <button type="button" onClick={generatePassword} className="px-3 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 text-sm">🔄</button>
+                  <button type="button" onClick={() => navigator.clipboard.writeText(credPassword)} className="px-3 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 text-sm">📋</button>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Vendedor / 担当者 (opcional)</label>
+                <input type="text" value={credSalesRep} onChange={(e) => setCredSalesRep(e.target.value)}
+                  placeholder="Nome do vendedor" className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg" />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button type="button" onClick={() => setShowCredModal(false)}
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">Cancelar</button>
+              <button type="button" onClick={handleSendCredentials} disabled={sendingCred || !credPassword}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm flex items-center justify-center gap-2">
+                <Send className="h-4 w-4" />
+                {sendingCred ? 'Enviando...' : 'Enviar Email'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

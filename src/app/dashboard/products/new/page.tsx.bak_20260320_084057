@@ -1,26 +1,22 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Calculator, Percent, Barcode, Package, Save } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Calculator, Percent, Barcode, Package } from 'lucide-react';
 import api from '@/lib/api';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import ImageUpload from '@/components/ImageUpload';
-import type { Category, Product, ApiResponse } from '@/types';
+import type { Category, ApiResponse } from '@/types';
 
 interface PricePreview {
   pf: { subtotal: string; tax: string; total: string };
   pj: { subtotal: string; tax: string; total: string };
 }
 
-export default function EditProductPage() {
+export default function NewProductPage() {
   const router = useRouter();
-  const params = useParams();
-  const productId = params.id as string;
-
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
-  const [loadingProduct, setLoadingProduct] = useState(true);
   const [pricePreview, setPricePreview] = useState<PricePreview | null>(null);
   const [images, setImages] = useState<string[]>([]);
   const [formData, setFormData] = useState({
@@ -44,7 +40,6 @@ export default function EditProductPage() {
     retailMarkup: '0.6',
     wholesaleUnit: 'UNIT',
     unitsPerBox: '',
-    unitsPerPackage: '',
     customBoxPrice: '',
     isNew: false,
     isBestseller: false,
@@ -66,7 +61,6 @@ export default function EditProductPage() {
 
   useEffect(() => {
     fetchCategories();
-    fetchProduct();
   }, []);
 
   const fetchCategories = async () => {
@@ -75,50 +69,6 @@ export default function EditProductPage() {
       setCategories(data.data || []);
     } catch (error) {
       console.error('Erro ao carregar categorias:', error);
-    }
-  };
-
-  const fetchProduct = async () => {
-    try {
-      const { data } = await api.get<ApiResponse<Product>>(`/api/products/${productId}`);
-      const product = data.data;
-
-      setFormData({
-        namePt: product.namePt || '',
-        nameJa: product.nameJa || '',
-        descriptionPt: product.descriptionPt || '',
-        descriptionJa: product.descriptionJa || '',
-        hinban: product.hinban || '',
-        janCode: product.janCode || '',
-        originalPrice: (product.originalPrice || 0).toString(),
-        customRetailPrice: '',
-        promoPrice: product.promoPrice ? product.promoPrice.toString() : '',
-        promoStartDate: product.promoStartDate?.split('T')[0] || '',
-        promoEndDate: product.promoEndDate?.split('T')[0] || '',
-        stock: product.stock?.toString() || '0',
-        categoryId: product.categoryId || '',
-        weightGrams: product.weightGrams?.toString() || '',
-        quantityInfo: product.quantityInfo || '',
-        shelfLifeDays: product.shelfLifeDays?.toString() || '',
-        storageType: product.storageType || 'AMBIENT',
-        retailMarkup: product.retailMarkup?.toString() || '0.6',
-        wholesaleUnit: product.wholesaleUnit || 'UNIT',
-        unitsPerBox: product.unitsPerBox?.toString() || '',
-        unitsPerPackage: (product as any).unitsPerPackage?.toString() || '',
-        customBoxPrice: product.boxPrice?.toString() || '',
-        isNew: product.isNew || false,
-        isBestseller: product.isBestseller || false,
-        isFeatured: product.isFeatured || false,
-        isOnSale: product.isOnSale || false,
-      });
-
-      setImages(product.images || []);
-    } catch (error) {
-      console.error('Erro ao carregar produto:', error);
-      alert('製品の読み込みに失敗しました / Erro ao carregar produto');
-      router.back();
-    } finally {
-      setLoadingProduct(false);
     }
   };
 
@@ -156,10 +106,8 @@ export default function EditProductPage() {
   }, [formData.originalPrice, formData.retailMarkup, formData.customRetailPrice]);
 
   useEffect(() => {
-    if (!loadingProduct) {
-      calculatePricePreview();
-    }
-  }, [calculatePricePreview, loadingProduct]);
+    calculatePricePreview();
+  }, [calculatePricePreview]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -195,24 +143,16 @@ export default function EditProductPage() {
         isOnSale: formData.isOnSale,
       };
 
-      await api.put(`/api/products/${productId}`, payload);
-      alert('製品が更新されました / Produto atualizado com sucesso!');
+      await api.post('/api/products', payload);
+      alert('製品が作成されました / Produto criado com sucesso!');
       router.push('/dashboard/products');
     } catch (error) {
-      console.error('Erro ao atualizar produto:', error);
-      alert('製品の更新に失敗しました / Erro ao atualizar produto');
+      console.error('Erro ao criar produto:', error);
+      alert('製品の作成に失敗しました / Erro ao criar produto');
     } finally {
       setLoading(false);
     }
   };
-
-  if (loadingProduct) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -223,8 +163,8 @@ export default function EditProductPage() {
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">製品編集 / Editar Produto</h1>
-            <p className="text-gray-500 mt-1">{formData.namePt}</p>
+            <h1 className="text-3xl font-bold text-gray-900">新規製品 / Novo Produto</h1>
+            <p className="text-gray-500 mt-1">製品情報を入力してください</p>
           </div>
         </div>
       </div>
@@ -371,11 +311,10 @@ export default function EditProductPage() {
                   >
                     <option value="UNIT">個 / Unidade</option>
                     <option value="BOX">箱 / Caixa</option>
-                    <option value="PACKAGE">パック / Pacote</option>
                   </select>
                 </div>
 
-                {(formData.wholesaleUnit === 'BOX' || formData.wholesaleUnit === 'PACKAGE') && (
+                {formData.wholesaleUnit === 'BOX' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       箱あたりの個数 / Unidades por Caixa *
@@ -684,19 +623,9 @@ export default function EditProductPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 font-medium flex items-center justify-center gap-2"
+                className="w-full px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 font-medium"
               >
-                {loading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
-                    保存中...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-5 w-5" />
-                    変更を保存
-                  </>
-                )}
+                {loading ? '保存中...' : '製品を作成'}
               </button>
               <button
                 type="button"

@@ -40,6 +40,7 @@ export default function NewProductPage() {
     retailMarkup: '0.6',
     wholesaleUnit: 'UNIT',
     unitsPerBox: '',
+    unitsPerPackage: '',
     customBoxPrice: '',
     isNew: false,
     isBestseller: false,
@@ -52,8 +53,10 @@ export default function NewProductPage() {
     : '';
 
   // Calcular preço da caixa (arredondamento japonês)
-  const autoBoxPrice = formData.wholesaleUnit === 'BOX' && formData.originalPrice && formData.unitsPerBox
-    ? Math.ceil(parseFloat(formData.originalPrice) * parseInt(formData.unitsPerBox))
+  const unitsInGroup = formData.wholesaleUnit === 'BOX' ? formData.unitsPerBox
+    : formData.wholesaleUnit === 'PACKAGE' ? formData.unitsPerPackage : '';
+  const autoBoxPrice = (formData.wholesaleUnit === 'BOX' || formData.wholesaleUnit === 'PACKAGE') && formData.originalPrice && unitsInGroup
+    ? Math.ceil(parseFloat(formData.originalPrice) * parseInt(unitsInGroup))
     : null;
   const calculatedBoxPrice = formData.customBoxPrice
     ? parseInt(formData.customBoxPrice)
@@ -136,6 +139,7 @@ export default function NewProductPage() {
         retailMarkup: parseFloat(formData.retailMarkup),
         wholesaleUnit: formData.wholesaleUnit,
         unitsPerBox: formData.wholesaleUnit === 'BOX' && formData.unitsPerBox ? parseInt(formData.unitsPerBox) : null,
+        unitsPerPackage: formData.wholesaleUnit === 'PACKAGE' && formData.unitsPerPackage ? parseInt(formData.unitsPerPackage) : null,
         boxPrice: calculatedBoxPrice,
         isNew: formData.isNew,
         isBestseller: formData.isBestseller,
@@ -314,17 +318,17 @@ export default function NewProductPage() {
                   </select>
                 </div>
 
-                {formData.wholesaleUnit === 'BOX' && (
+                {(formData.wholesaleUnit === 'BOX' || formData.wholesaleUnit === 'PACKAGE') && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      箱あたりの個数 / Unidades por Caixa *
+                      {formData.wholesaleUnit === 'BOX' ? '箱あたりの個数 / Unidades por Caixa' : 'パックあたりの個数 / Unidades por Pacote'} *
                     </label>
                     <input
                       type="number"
                       required
                       min="1"
-                      value={formData.unitsPerBox}
-                      onChange={(e) => setFormData({ ...formData, unitsPerBox: e.target.value })}
+                      value={formData.wholesaleUnit === 'BOX' ? formData.unitsPerBox : formData.unitsPerPackage}
+                      onChange={(e) => setFormData({ ...formData, [formData.wholesaleUnit === 'BOX' ? 'unitsPerBox' : 'unitsPerPackage']: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
                       placeholder="例: 10"
                     />

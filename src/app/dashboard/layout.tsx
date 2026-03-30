@@ -21,7 +21,7 @@ import {
   LucideIcon,
   Truck,
   UserCircle,
-} from 'lucide-react';
+Image as LucideImage, FileText, Newspaper } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 interface SubMenuItem {
@@ -57,6 +57,7 @@ const menuItems: MenuItem[] = [
       { icon: UserCircle, label: 'Usuários', labelJa: 'ユーザー', href: '/dashboard/users' },
       { icon: DollarSign, label: 'Impostos', labelJa: '税金', href: '/dashboard/taxes' },
       { icon: Truck, label: 'Transportadoras', labelJa: '運送会社', href: '/dashboard/carriers' },
+      { icon: LucideImage, label: 'Banners', labelJa: 'バナー', href: '/dashboard/banners' },
       { icon: Settings, label: 'Geral', labelJa: '一般', href: '/dashboard/settings' },
     ]
   },

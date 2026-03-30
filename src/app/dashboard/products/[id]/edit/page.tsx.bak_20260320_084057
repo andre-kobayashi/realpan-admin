@@ -44,7 +44,6 @@ export default function EditProductPage() {
     retailMarkup: '0.6',
     wholesaleUnit: 'UNIT',
     unitsPerBox: '',
-    unitsPerPackage: '',
     customBoxPrice: '',
     isNew: false,
     isBestseller: false,
@@ -104,7 +103,6 @@ export default function EditProductPage() {
         retailMarkup: product.retailMarkup?.toString() || '0.6',
         wholesaleUnit: product.wholesaleUnit || 'UNIT',
         unitsPerBox: product.unitsPerBox?.toString() || '',
-        unitsPerPackage: (product as any).unitsPerPackage?.toString() || '',
         customBoxPrice: product.boxPrice?.toString() || '',
         isNew: product.isNew || false,
         isBestseller: product.isBestseller || false,
@@ -371,11 +369,10 @@ export default function EditProductPage() {
                   >
                     <option value="UNIT">個 / Unidade</option>
                     <option value="BOX">箱 / Caixa</option>
-                    <option value="PACKAGE">パック / Pacote</option>
                   </select>
                 </div>
 
-                {(formData.wholesaleUnit === 'BOX' || formData.wholesaleUnit === 'PACKAGE') && (
+                {formData.wholesaleUnit === 'BOX' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       箱あたりの個数 / Unidades por Caixa *

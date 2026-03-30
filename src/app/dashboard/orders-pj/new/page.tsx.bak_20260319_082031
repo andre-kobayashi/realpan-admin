@@ -22,9 +22,6 @@ interface PJCustomer {
   billingDueDay?: number;
   paymentTerms?: number;
   creditLimit?: number;
-  allowedPaymentMethods?: string[];
-  customerCode?: string;
-  contactName?: string;
   addresses?: Array<{
     id: string;
     name?: string;
@@ -81,7 +78,7 @@ export default function NewOrderPJPage() {
     productId: string;
     quantity: number;
     unitPrice: number;
-    unit: 'UNIT' | 'BOX' | 'PACKAGE';
+    unit: 'UNIT' | 'BOX';
   }>>([]);
 
   // Product search modal
@@ -98,7 +95,7 @@ export default function NewOrderPJPage() {
 
   // Notes & Payment
   const [notes, setNotes] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<string>('INVOICE');
+  const [paymentMethod, setPaymentMethod] = useState<'INVOICE' | 'BANK_TRANSFER'>('INVOICE');
 
   // Fetch data
   useEffect(() => {
@@ -169,9 +166,6 @@ export default function NewOrderPJPage() {
       if (defaultAddr) setSelectedAddressId(defaultAddr.id);
       // Reset items when customer changes
       setItems([]);
-      // Auto-set payment method based on allowed methods
-      const methods = full.allowedPaymentMethods || ['INVOICE'];
-      if (methods.length > 0) setPaymentMethod(methods[0]);
     } catch {
       setSelectedCustomer(customer);
       setShowCustomerSearch(false);
@@ -202,7 +196,7 @@ export default function NewOrderPJPage() {
       productId: product.id,
       quantity: 1,
       unitPrice: discountedPrice,
-      unit: (['BOX', 'PACKAGE'].includes(product.wholesaleUnit as string) ? product.wholesaleUnit : 'UNIT') as 'UNIT' | 'BOX' | 'PACKAGE',
+      unit: (product.wholesaleUnit === 'BOX' ? 'BOX' : 'UNIT') as 'UNIT' | 'BOX',
     }]);
     setShowAddProducts(false);
     setProductSearch('');
@@ -217,7 +211,7 @@ export default function NewOrderPJPage() {
     const n = [...items]; n[index].unitPrice = price; setItems(n);
   };
 
-  const updateUnit = (index: number, unit: 'UNIT' | 'BOX' | 'PACKAGE') => {
+  const updateUnit = (index: number, unit: 'UNIT' | 'BOX') => {
     const n = [...items];
     const product = products.find(p => p.id === n[index].productId);
     if (product) {
@@ -246,7 +240,7 @@ export default function NewOrderPJPage() {
       if (!product) return;
       subtotal += item.unitPrice * item.quantity;
       if (product.weightGrams) {
-        const mult = item.unit === 'BOX' ? (product.unitsPerBox || 1) : item.unit === 'PACKAGE' ? ((product as any).unitsPerPackage || 1) : 1;
+        const mult = item.unit === 'BOX' ? (product.unitsPerBox || 1) : 1;
         totalWeight += product.weightGrams * item.quantity * mult;
       }
     });
@@ -406,26 +400,19 @@ export default function NewOrderPJPage() {
         {selectedCustomer && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
             <h3 className="font-semibold text-gray-900 mb-4">支払方法 / Método de Pagamento</h3>
-            <div className="flex gap-3 flex-wrap">
-              {(selectedCustomer.allowedPaymentMethods && selectedCustomer.allowedPaymentMethods.length > 0
-                ? selectedCustomer.allowedPaymentMethods
-                : ['INVOICE', 'BANK_TRANSFER']
-              ).map(method => {
-                const config: Record<string, { label: string; labelPt: string; color: string; detail?: string }> = {
-                  INVOICE: { label: '請求書払い', labelPt: 'Faturamento', color: 'orange', detail: `締め日: ${selectedCustomer.billingClosingDay || 31}日 / 支払: 翌月${selectedCustomer.billingDueDay || 10}日` },
-                  BANK_TRANSFER: { label: '銀行振込', labelPt: 'Transferência', color: 'blue', detail: '浜松いわた信用金庫' },
-                  DAIBIKI: { label: '代引き', labelPt: 'Pagamento na entrega', color: 'green', detail: '配達時に現金でお支払い' },
-                  CASH: { label: '現金', labelPt: 'Dinheiro (retirada)', color: 'amber', detail: '工場引き取り / Retirada na fábrica' },
-                };
-                const cfg = config[method] || { label: method, labelPt: method, color: 'gray' };
-                return (
-                  <button key={method} type="button" onClick={() => setPaymentMethod(method)}
-                    className={`flex-1 min-w-[140px] p-4 rounded-xl border-2 transition-all ${paymentMethod === method ? `border-${cfg.color}-500 bg-${cfg.color}-50` : 'border-gray-200 hover:border-gray-300'}`}>
-                    <p className="font-semibold text-gray-900">{cfg.label} / {cfg.labelPt}</p>
-                    {cfg.detail && <p className="text-xs text-gray-500 mt-1">{cfg.detail}</p>}
-                  </button>
-                );
-              })}
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setPaymentMethod('INVOICE')}
+                className={`flex-1 p-4 rounded-xl border-2 transition-all ${paymentMethod === 'INVOICE' ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                <p className="font-semibold text-gray-900">請求書払い / Faturamento</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  締め日: {selectedCustomer.billingClosingDay || 31}日 / 支払: 翌月{selectedCustomer.billingDueDay || 10}日
+                </p>
+              </button>
+              <button type="button" onClick={() => setPaymentMethod('BANK_TRANSFER')}
+                className={`flex-1 p-4 rounded-xl border-2 transition-all ${paymentMethod === 'BANK_TRANSFER' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                <p className="font-semibold text-gray-900">銀行振込 / Transferência</p>
+                <p className="text-xs text-gray-500 mt-1">浜松いわた信用金庫</p>
+              </button>
             </div>
           </div>
         )}
@@ -534,7 +521,7 @@ export default function NewOrderPJPage() {
                             </td>
                             <td className="px-4 py-3 text-center">
                               {product.wholesaleUnit === 'BOX' ? (
-                                <select value={item.unit} onChange={e => updateUnit(index, e.target.value as 'UNIT' | 'BOX' | 'PACKAGE')}
+                                <select value={item.unit} onChange={e => updateUnit(index, e.target.value as 'UNIT' | 'BOX')}
                                   className="px-2 py-1 border border-gray-300 rounded text-xs">
                                   <option value="UNIT">個</option>
                                   <option value="BOX">箱/{product.unitsPerBox}</option>

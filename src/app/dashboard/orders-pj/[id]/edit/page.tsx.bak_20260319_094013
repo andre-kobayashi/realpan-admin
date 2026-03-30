@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Save, Trash2, Calendar, Clock, Truck, Plus, Search, X, CheckSquare, Square, CreditCard, Package } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Calendar, Clock, Truck, Plus, Search, X } from 'lucide-react';
 import api from '@/lib/api';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import type { Order, Product, ApiResponse } from '@/types';
@@ -55,9 +55,6 @@ export default function EditOrderPJPage() {
   const [shippingCost, setShippingCost] = useState('0');
   const [autoCalculateShipping, setAutoCalculateShipping] = useState(false);
   const [notes, setNotes] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('');
-  const [orderStatus, setOrderStatus] = useState('');
-  const [pickedItems, setPickedItems] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetchOrder();
@@ -264,8 +261,6 @@ export default function EditOrderPJPage() {
         deliveryTime: deliveryTime || undefined,
         shippingCost: parseInt(shippingCost) || 0,
         notes: notes || undefined,
-        paymentMethod: paymentMethod || undefined,
-        status: orderStatus || undefined,
       };
 
       console.log('Enviando payload:', payload);
@@ -336,64 +331,6 @@ export default function EditOrderPJPage() {
                 ✓ 法人割引適用済: {(discountRate * 100).toFixed(0)}%
               </div>
             )}
-          </div>
-        </div>
-
-        {/* ═══ Status do Pedido ═══ */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Package className="h-5 w-5" /> ステータス / Status do Pedido
-          </h3>
-          <div className="flex gap-2 flex-wrap">
-            {[
-              { value: 'PENDING', label: '保留中', labelPt: 'Pendente', color: 'yellow' },
-              { value: 'PAID', label: '支払済', labelPt: 'Pago', color: 'green' },
-              { value: 'PROCESSING', label: '処理中', labelPt: 'Processando', color: 'blue' },
-              { value: 'SHIPPED', label: '発送済', labelPt: 'Enviado', color: 'purple' },
-              { value: 'DELIVERED', label: '配達済', labelPt: 'Entregue', color: 'green' },
-              { value: 'CANCELLED', label: 'キャンセル', labelPt: 'Cancelado', color: 'red' },
-            ].map(s => (
-              <button key={s.value} type="button" onClick={() => setOrderStatus(s.value)}
-                className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
-                  orderStatus === s.value
-                    ? `border-${s.color}-500 bg-${s.color}-50 text-${s.color}-800`
-                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                }`}>
-                {s.label} / {s.labelPt}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* ═══ Método de Pagamento ═══ */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <CreditCard className="h-5 w-5" /> 支払方法 / Método de Pagamento
-          </h3>
-          <div className="flex gap-3 flex-wrap">
-            {(() => {
-              const methods = (order?.customer as any)?.allowedPaymentMethods?.length > 0
-                ? (order?.customer as any).allowedPaymentMethods
-                : ['INVOICE', 'BANK_TRANSFER', 'DAIBIKI', 'CASH'];
-              const config: Record<string, { label: string; labelPt: string; color: string }> = {
-                INVOICE: { label: '請求書払い', labelPt: 'Faturamento', color: 'orange' },
-                BANK_TRANSFER: { label: '銀行振込', labelPt: 'Transferência', color: 'blue' },
-                DAIBIKI: { label: '代引き', labelPt: 'Contra-entrega', color: 'green' },
-                CASH: { label: '現金', labelPt: 'Dinheiro', color: 'amber' },
-              };
-              return methods.map((m: string) => {
-                const cfg = config[m] || { label: m, labelPt: m, color: 'gray' };
-                return (
-                  <button key={m} type="button" onClick={() => setPaymentMethod(m)}
-                    className={`flex-1 min-w-[120px] p-3 rounded-xl border-2 transition-all text-center ${
-                      paymentMethod === m ? `border-${cfg.color}-500 bg-${cfg.color}-50` : 'border-gray-200 hover:border-gray-300'
-                    }`}>
-                    <p className="font-semibold text-gray-900 text-sm">{cfg.label}</p>
-                    <p className="text-xs text-gray-500">{cfg.labelPt}</p>
-                  </button>
-                );
-              });
-            })()}
           </div>
         </div>
 
@@ -537,17 +474,9 @@ export default function EditOrderPJPage() {
 
                   return (
                     <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-center">
-                        <button type="button" onClick={() => setPickedItems(prev => ({ ...prev, [item.productId]: !prev[item.productId] }))}
-                          className="hover:scale-110 transition-transform">
-                          {pickedItems[item.productId]
-                            ? <CheckSquare className="h-5 w-5 text-green-600" />
-                            : <Square className="h-5 w-5 text-gray-300" />}
-                        </button>
-                      </td>
                       <td className="px-4 py-3">
-                        <div className={`font-medium ${pickedItems[item.productId] ? 'text-green-700 line-through' : 'text-gray-900'}`}>{product.namePt}</div>
-                        <div className={`text-sm ${pickedItems[item.productId] ? 'text-green-500 line-through' : 'text-gray-500'}`}>{product.nameJa}</div>
+                        <div className="font-medium text-gray-900">{product.namePt}</div>
+                        <div className="text-sm text-gray-500">{product.nameJa}</div>
                       </td>
                       <td className="px-4 py-3 text-center">
                         {product.wholesaleUnit === 'BOX' ? (
@@ -623,27 +552,6 @@ export default function EditOrderPJPage() {
             </div>
           </div>
         </div>
-
-        {/* Picking Summary */}
-        {items.length > 0 && (
-          <div className={`rounded-2xl border p-4 mb-6 flex items-center justify-between ${
-            Object.values(pickedItems).filter(Boolean).length === items.length && items.length > 0
-              ? 'bg-green-50 border-green-300'
-              : 'bg-yellow-50 border-yellow-200'
-          }`}>
-            <div className="flex items-center gap-3">
-              <CheckSquare className={`h-5 w-5 ${
-                Object.values(pickedItems).filter(Boolean).length === items.length ? 'text-green-600' : 'text-yellow-600'
-              }`} />
-              <span className="font-medium text-gray-900">
-                分離チェック / Separação: {Object.values(pickedItems).filter(Boolean).length} / {items.length} itens
-              </span>
-            </div>
-            {Object.values(pickedItems).filter(Boolean).length === items.length && items.length > 0 && (
-              <span className="text-green-700 font-semibold text-sm">全品分離完了 / Todos separados!</span>
-            )}
-          </div>
-        )}
 
         {/* Observações */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">

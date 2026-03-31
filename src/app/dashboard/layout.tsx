@@ -23,6 +23,7 @@ import {
   UserCircle,
 Image as LucideImage, FileText, Newspaper, Users } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import api from '@/lib/api';
 
 interface SubMenuItem {
   icon: LucideIcon;
@@ -87,6 +88,8 @@ export default function DashboardLayout({
   const [user, setUser] = useState<Partial<UserType>>({ firstName: '', lastName: '' });
   const [openSubmenus, setOpenSubmenus] = useState<{ [key: number]: boolean }>({});
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [pendingPF, setPendingPF] = useState(0);
+  const [pendingPJ, setPendingPJ] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
 
@@ -94,16 +97,20 @@ export default function DashboardLayout({
   useEffect(() => {
     const fetchNotifs = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.realpan.jp'}/api/notifications?limit=10`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
+        const { data } = await api.get('/api/notifications?limit=10');
         if (data.success) {
           setNotifications(data.data || []);
           setUnreadCount(data.unreadCount || 0);
         }
+      } catch {}
+      // Fetch pending order counts
+      try {
+        const { data: pfData } = await api.get('/api/orders?status=PENDING&customerType=INDIVIDUAL&limit=1');
+        setPendingPF(pfData.pagination?.total || pfData.data?.length || 0);
+      } catch {}
+      try {
+        const { data: pjData } = await api.get('/api/orders?status=PENDING&customerType=CORPORATE&limit=1');
+        setPendingPJ(pjData.pagination?.total || pjData.data?.length || 0);
       } catch {}
     };
     fetchNotifs();
@@ -113,10 +120,7 @@ export default function DashboardLayout({
 
   const markAsRead = async (id: string) => {
     try {
-      const token = localStorage.getItem('token');
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.realpan.jp'}/api/notifications/${id}/read`, {
-        method: 'PUT', headers: { Authorization: `Bearer ${token || ''}` },
-      });
+      await api.put(`/api/notifications/${id}/read`);
       setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
       setUnreadCount(Math.max(0, unreadCount - 1));
     } catch {}
@@ -124,10 +128,7 @@ export default function DashboardLayout({
 
   const markAllRead = async () => {
     try {
-      const token = localStorage.getItem('token');
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.realpan.jp'}/api/notifications/read-all`, {
-        method: 'PUT', headers: { Authorization: `Bearer ${token || ''}` },
-      });
+      await api.put('/api/notifications/read-all');
       setNotifications(notifications.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
     } catch {}
@@ -263,6 +264,12 @@ export default function DashboardLayout({
                   <div className="text-sm font-medium">{item.label}</div>
                   <div className="text-xs opacity-75">{item.labelJa}</div>
                 </div>
+                {item.href === '/dashboard/orders-pf' && pendingPF > 0 && (
+                  <span className="bg-red-500 text-white text-[10px] font-bold min-w-[20px] h-5 flex items-center justify-center rounded-full px-1.5">{pendingPF}</span>
+                )}
+                {item.href === '/dashboard/orders-pj' && pendingPJ > 0 && (
+                  <span className="bg-red-500 text-white text-[10px] font-bold min-w-[20px] h-5 flex items-center justify-center rounded-full px-1.5">{pendingPJ}</span>
+                )}
               </Link>
             );
           })}

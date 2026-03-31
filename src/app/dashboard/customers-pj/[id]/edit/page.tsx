@@ -51,6 +51,7 @@ export default function EditCustomerPJPage() {
     building: '',
     discountRate: '0.15',
     billingClosingDay: '31',
+    billingCustomerId: '',
     billingDueDay: '10',
     paymentTerms: '30',
     creditLimit: '',
@@ -67,7 +68,16 @@ export default function EditCustomerPJPage() {
     }));
   };
 
-  useEffect(() => { fetchCustomer(); }, []);
+  const [pjCustomers, setPjCustomers] = useState<any[]>([]);
+
+  // Fetch PJ customers for billing selector
+  useEffect(() => {
+    api.get('/api/customers?type=CORPORATE&limit=100').then(res => {
+      setPjCustomers(res.data.data || []);
+    }).catch(() => {});
+  }, []);
+
+    useEffect(() => { fetchCustomer(); }, []);
 
   const fetchCustomer = async () => {
     try {
@@ -97,6 +107,7 @@ export default function EditCustomerPJPage() {
         building: c.building || '',
         discountRate: (c.discountRate || 0.15).toString(),
         billingClosingDay: (c.billingClosingDay || 31).toString(),
+        billingCustomerId: (c as any).billingCustomerId || '',
         billingDueDay: (c.billingDueDay || 10).toString(),
         paymentTerms: (c.paymentTerms || 30).toString(),
         creditLimit: c.creditLimit ? c.creditLimit.toString() : '',
@@ -165,6 +176,7 @@ export default function EditCustomerPJPage() {
         building: formData.building || null,
         discountRate: parseFloat(formData.discountRate),
         billingClosingDay: parseInt(formData.billingClosingDay),
+        billingCustomerId: formData.billingCustomerId || null,
         billingDueDay: parseInt(formData.billingDueDay),
         paymentTerms: parseInt(formData.paymentTerms),
         creditLimit: formData.creditLimit ? parseInt(formData.creditLimit) : null,
@@ -464,6 +476,27 @@ export default function EditCustomerPJPage() {
                   <h3 className="font-semibold text-gray-900">Faturamento / 請求</h3>
                 </div>
                 <div className="space-y-4">
+                  {/* 振込先 / 請求先 */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      振込先 / 請求先 (Pagador)
+                    </label>
+                    <select value={formData.billingCustomerId}
+                      onChange={(e) => setFormData({ ...formData, billingCustomerId: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                      <option value="">Próprio cliente (padrão)</option>
+                      {pjCustomers.filter(pc => pc.id !== customerId).map(pc => (
+                        <option key={pc.id} value={pc.id}>
+                          {pc.customerCode ? `[${pc.customerCode}] ` : ''}{pc.companyName || pc.email}
+                        </option>
+                      ))}
+                    </select>
+                    {formData.billingCustomerId && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        ⚠️ 納品書は金額なし / Nouhinsho sem valores. 請求書は請求先へ.
+                      </p>
+                    )}
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Dia de Fechamento</label>
                     <select value={formData.billingClosingDay} onChange={(e) => setFormData({ ...formData, billingClosingDay: e.target.value })}

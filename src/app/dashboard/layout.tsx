@@ -102,8 +102,7 @@ export default function DashboardLayout({
           setNotifications(data.data || []);
           setUnreadCount(data.unreadCount || 0);
         }
-      } catch {}
-      // Fetch pending order counts
+      } catch (e) { /* silent - API might be restarting */ }
       try {
         const { data: pfData } = await api.get('/api/orders?status=PENDING&customerType=INDIVIDUAL&limit=1');
         setPendingPF(pfData.pagination?.total || pfData.data?.length || 0);
@@ -114,7 +113,7 @@ export default function DashboardLayout({
       } catch {}
     };
     fetchNotifs();
-    const interval = setInterval(fetchNotifs, 30000); // Poll every 30s
+    const interval = setInterval(fetchNotifs, 300000); // Poll every 5 min
     return () => clearInterval(interval);
   }, []);
 

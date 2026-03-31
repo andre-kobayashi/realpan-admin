@@ -79,7 +79,7 @@ export default function CustomersPJPage() {
         <Breadcrumbs />
         <div className="mt-4 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Clientes Pessoa Jurídica</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Clientes Atacado</h1>
             <p className="text-gray-500 mt-1">法人顧客管理</p>
           </div>
           <button
@@ -94,7 +94,7 @@ export default function CustomersPJPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="text-sm text-gray-600 mb-1">Total de Clientes PJ</div>
+          <div className="text-sm text-gray-600 mb-1">Total de Clientes Atacado</div>
           <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
         </div>
         <div className="bg-green-50 rounded-xl border border-green-200 p-6">
@@ -140,7 +140,7 @@ export default function CustomersPJPage() {
             onClick={() => router.push('/dashboard/customers-pj/new')}
             className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
           >
-            Cadastrar Primeiro Cliente PJ / 最初の法人顧客を登録
+            Cadastrar Primeiro Cliente Atacado / 最初の法人顧客を登録
           </button>
         </div>
       ) : (
@@ -312,7 +312,7 @@ export default function CustomersPJPage() {
                   onClick={() => handleApprove(selectedCustomer.id)}
                   className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >
-                  Aprovar Cliente PJ / 法人顧客を承認
+                  Aprovar Cliente Atacado / 法人顧客を承認
                 </button>
               )}
             </div>

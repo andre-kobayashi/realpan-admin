@@ -48,7 +48,7 @@ export default function CustomersPFPage() {
       <div>
         <Breadcrumbs />
         <div className="mt-4">
-          <h1 className="text-3xl font-bold text-gray-900">Clientes Pessoa Física</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Clientes Varejo</h1>
           <p className="text-gray-500 mt-1">個人顧客管理</p>
         </div>
       </div>
@@ -56,7 +56,7 @@ export default function CustomersPFPage() {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="text-sm text-gray-600 mb-1">Total de Clientes PF</div>
+          <div className="text-sm text-gray-600 mb-1">Total de Clientes do Varejo</div>
           <div className="text-3xl font-bold text-gray-900">{customers.length}</div>
         </div>
         <div className="bg-blue-50 rounded-xl border border-blue-200 p-6">
@@ -93,7 +93,7 @@ export default function CustomersPFPage() {
       {filteredCustomers.length === 0 ? (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
           <User className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum cliente PF encontrado</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum cliente do Varejo encontrado</h3>
           <p className="text-gray-500">個人顧客が見つかりません</p>
         </div>
       ) : (

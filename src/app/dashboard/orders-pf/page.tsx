@@ -115,7 +115,7 @@ export default function OrdersPFPage() {
         <Breadcrumbs />
         <div className="mt-4 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">個人注文 / Pedidos PF</h1>
+            <h1 className="text-3xl font-bold text-gray-900">個人注文 / Pedidos Varejo</h1>
             <p className="text-gray-500 mt-1">個人顧客向け注文管理</p>
           </div>
         </div>
@@ -167,7 +167,7 @@ export default function OrdersPFPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
           <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">個人注文が見つかりません</h3>
-          <p className="text-gray-500">Nenhum pedido PF encontrado</p>
+          <p className="text-gray-500">Nenhum pedido do Varejo encontrado</p>
         </div>
       ) : (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">

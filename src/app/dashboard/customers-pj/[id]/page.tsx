@@ -217,7 +217,25 @@ export default function CustomerPJDetailPage() {
         api.get(`/api/orders?customerId=${customerId}`),
       ]);
       setCustomer(custRes.data.data || custRes.data);
-      setOrders(ordersRes.data.data || []);
+      let allOrders = ordersRes.data.data || [];
+
+      // Also fetch orders from customers that have this customer as billingCustomer (振込先)
+      try {
+        const billedRes = await api.get(`/api/customers?type=CORPORATE&billingCustomerId=${customerId}&limit=100`);
+        const billedCustomers = billedRes.data.data || [];
+        for (const bc of billedCustomers) {
+          const bcOrders = await api.get(`/api/orders?customerId=${bc.id}`);
+          const bcOrdersList = (bcOrders.data.data || []).map((o: any) => ({
+            ...o,
+            _billedFrom: bc.companyName || bc.customerCode || bc.id.slice(-4),
+          }));
+          allOrders = [...allOrders, ...bcOrdersList];
+        }
+      } catch {}
+
+      // Sort by date desc
+      allOrders.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setOrders(allOrders);
     } catch (error) { console.error('Error:', error); }
     finally { setLoading(false); }
   };

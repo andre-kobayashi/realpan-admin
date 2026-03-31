@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, GripVertical, Eye, EyeOff, Upload, Save, ExternalLink, Image as ImageIcon, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
+import BannerImageEditor from '@/components/BannerImageEditor';
 
 interface Banner {
   id: string;
@@ -23,7 +24,7 @@ export default function BannersPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [uploading, setUploading] = useState<string | null>(null);
-  const fileInputRef = useRef<Record<string, HTMLInputElement | null>>({});
+  
 
   useEffect(() => { fetchBanners(); }, []);
 
@@ -68,18 +69,7 @@ export default function BannersPage() {
     } catch (e) { console.error(e); alert('Erro ao excluir'); }
   };
 
-  const uploadImage = async (id: string, file: File) => {
-    try {
-      setUploading(id);
-      const formData = new FormData();
-      formData.append('image', file);
-      const res = await api.post(`/api/banners/${id}/image`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      setBanners(banners.map(b => b.id === id ? { ...b, imageUrl: res.data.data.imageUrl } : b));
-    } catch (e) { console.error(e); alert('Erro no upload da imagem'); }
-    finally { setUploading(null); }
-  };
+  
 
   const moveUp = async (idx: number) => {
     if (idx === 0) return;
@@ -99,18 +89,24 @@ export default function BannersPage() {
     try { await api.put('/banners/reorder/positions', { items }); } catch (e) { console.error(e); }
   };
 
-  const Field = ({ label, value, onChange, placeholder = '' }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) => (
-    <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
-      <input
-        type="text"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
-      />
-    </div>
-  );
+  const Field = ({ label, value, onChange, placeholder = '' }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) => {
+    const [local, setLocal] = useState(value);
+    const ref = useRef(value);
+    useEffect(() => { if (value !== ref.current) { setLocal(value); ref.current = value; } }, [value]);
+    return (
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
+        <input
+          type="text"
+          value={local}
+          onChange={e => { setLocal(e.target.value); }}
+          onBlur={() => { if (local !== value) onChange(local); }}
+          placeholder={placeholder}
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+        />
+      </div>
+    );
+  };
 
   if (loading) return (
     <div className="p-6">
@@ -154,37 +150,13 @@ export default function BannersPage() {
               }`}
             >
               <div className="flex items-stretch">
-                {/* Image area */}
-                <div className="relative w-72 flex-shrink-0 bg-gray-100">
-                  {banner.imageUrl ? (
-                    <img
-                      src={`https://api.realpan.jp${banner.imageUrl}`}
-                      alt={banner.titlePt}
-                      className="w-full h-full object-cover min-h-[180px]"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full min-h-[180px]">
-                      <ImageIcon className="w-10 h-10 text-gray-300" />
-                    </div>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    ref={el => { fileInputRef.current[banner.id] = el; }}
-                    onChange={e => {
-                      const file = e.target.files?.[0];
-                      if (file) uploadImage(banner.id, file);
-                    }}
+                {/* Image area with editor */}
+                <div className="w-80 flex-shrink-0">
+                  <BannerImageEditor
+                    bannerId={banner.id}
+                    currentImage={banner.imageUrl}
+                    onUploaded={(imageUrl) => setBanners(banners.map(b => b.id === banner.id ? { ...b, imageUrl } : b))}
                   />
-                  <button
-                    onClick={() => fileInputRef.current[banner.id]?.click()}
-                    disabled={uploading === banner.id}
-                    className="absolute bottom-2 right-2 bg-black/60 hover:bg-black/80 text-white px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition-colors"
-                  >
-                    {uploading === banner.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-                    {banner.imageUrl ? 'Trocar' : 'Upload'}
-                  </button>
                 </div>
 
                 {/* Fields */}

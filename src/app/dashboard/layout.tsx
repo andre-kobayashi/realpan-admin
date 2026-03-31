@@ -21,7 +21,7 @@ import {
   LucideIcon,
   Truck,
   UserCircle,
-Image as LucideImage, FileText, Newspaper } from 'lucide-react';
+Image as LucideImage, FileText, Newspaper, Users } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 interface SubMenuItem {
@@ -44,11 +44,27 @@ const menuItems: MenuItem[] = [
   { icon: Package, label: 'Produtos', labelJa: '製品', href: '/dashboard/products' },
   { icon: Gift, label: 'Kits Premium', labelJa: 'キット', href: '/dashboard/kits' },
   { icon: DollarSign, label: 'Financeiro', labelJa: '財務管理', href: '/dashboard/finance' },
-  { icon: ShoppingCart, label: 'Pedidos PF', labelJa: '個人注文', href: '/dashboard/orders-pf' },
-  { icon: Building, label: 'Pedidos PJ', labelJa: '法人注文', href: '/dashboard/orders-pj' },
+  { icon: ShoppingCart, label: 'Pedidos Varejo', labelJa: '個人注文', href: '/dashboard/orders-pf' },
+  { icon: Building, label: 'Pedidos Atacado', labelJa: '法人注文', href: '/dashboard/orders-pj' },
   { icon: FolderTree, label: 'Categorias', labelJa: 'カテゴリー', href: '/dashboard/categories' },
-  { icon: User, label: 'Clientes PF', labelJa: '個人顧客', href: '/dashboard/customers-pf' },
-  { icon: Building, label: 'Clientes PJ', labelJa: '法人顧客', href: '/dashboard/customers-pj' },
+  {
+    icon: Users,
+    label: 'Clientes',
+    labelJa: '顧客',
+    submenu: [
+      { icon: User, label: 'Varejo', labelJa: '個人', href: '/dashboard/customers-pf' },
+      { icon: Building, label: 'Atacado', labelJa: '法人', href: '/dashboard/customers-pj' },
+    ]
+  },
+  {
+    icon: FileText,
+    label: 'Páginas',
+    labelJa: 'ページ',
+    submenu: [
+      { icon: LucideImage, label: 'Banners', labelJa: 'バナー', href: '/dashboard/banners' },
+      { icon: Newspaper, label: 'Blog', labelJa: 'ブログ', href: '/dashboard/blog' },
+    ]
+  },
   { 
     icon: Settings, 
     label: 'Configurações', 
@@ -57,7 +73,6 @@ const menuItems: MenuItem[] = [
       { icon: UserCircle, label: 'Usuários', labelJa: 'ユーザー', href: '/dashboard/users' },
       { icon: DollarSign, label: 'Impostos', labelJa: '税金', href: '/dashboard/taxes' },
       { icon: Truck, label: 'Transportadoras', labelJa: '運送会社', href: '/dashboard/carriers' },
-      { icon: LucideImage, label: 'Banners', labelJa: 'バナー', href: '/dashboard/banners' },
       { icon: Settings, label: 'Geral', labelJa: '一般', href: '/dashboard/settings' },
     ]
   },
@@ -71,6 +86,52 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [user, setUser] = useState<Partial<UserType>>({ firstName: '', lastName: '' });
   const [openSubmenus, setOpenSubmenus] = useState<{ [key: number]: boolean }>({});
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  // Fetch notifications
+  useEffect(() => {
+    const fetchNotifs = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.realpan.jp'}/api/notifications?limit=10`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (data.success) {
+          setNotifications(data.data || []);
+          setUnreadCount(data.unreadCount || 0);
+        }
+      } catch {}
+    };
+    fetchNotifs();
+    const interval = setInterval(fetchNotifs, 30000); // Poll every 30s
+    return () => clearInterval(interval);
+  }, []);
+
+  const markAsRead = async (id: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.realpan.jp'}/api/notifications/${id}/read`, {
+        method: 'PUT', headers: { Authorization: `Bearer ${token || ''}` },
+      });
+      setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
+      setUnreadCount(Math.max(0, unreadCount - 1));
+    } catch {}
+  };
+
+  const markAllRead = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.realpan.jp'}/api/notifications/read-all`, {
+        method: 'PUT', headers: { Authorization: `Bearer ${token || ''}` },
+      });
+      setNotifications(notifications.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
+    } catch {}
+  };
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -225,10 +286,54 @@ export default function DashboardLayout({
 
           {/* Right Section */}
           <div className="flex items-center gap-4 ml-4">
-            <button className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <Bell className="h-5 w-5 text-gray-600" />
-              <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
-            </button>
+            <div className="relative">
+              <button onClick={() => setShowNotifications(!showNotifications)}
+                className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <Bell className="h-5 w-5 text-gray-600" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold px-1">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {showNotifications && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
+                  <div className="absolute right-0 top-12 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b">
+                      <span className="font-semibold text-sm text-gray-800">Notificações</span>
+                      {unreadCount > 0 && (
+                        <button onClick={markAllRead} className="text-xs text-blue-500 hover:text-blue-700">Marcar todas como lidas</button>
+                      )}
+                    </div>
+                    <div className="max-h-80 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="py-8 text-center text-gray-400 text-sm">Nenhuma notificação</div>
+                      ) : (
+                        notifications.map(n => (
+                          <div key={n.id}
+                            onClick={() => { markAsRead(n.id); if (n.link) window.location.href = n.link; setShowNotifications(false); }}
+                            className={`px-4 py-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${!n.read ? 'bg-blue-50/50' : ''}`}>
+                            <div className="flex items-start gap-2">
+                              <span className="text-lg flex-shrink-0">{n.type === 'order' ? '📦' : n.type === 'customer' ? '👤' : 'ℹ️'}</span>
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-sm ${!n.read ? 'font-semibold text-gray-800' : 'text-gray-600'} truncate`}>{n.titlePt}</p>
+                                <p className="text-xs text-gray-400 truncate">{n.message}</p>
+                                <p className="text-xs text-gray-300 mt-1">
+                                  {new Date(n.createdAt).toLocaleDateString('pt-BR')} {new Date(n.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              </div>
+                              {!n.read && <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1.5"></span>}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
 
             <button
               onClick={handleLogout}

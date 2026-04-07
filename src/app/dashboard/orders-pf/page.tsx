@@ -75,13 +75,30 @@ export default function OrdersPFPage() {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
     printWindow.document.write(`<html><head><title>ピッキングリスト - ${showPickingList?.orderNumber}</title>
-      <style>@media print { @page { margin: 1cm; } } body { font-family: Arial, sans-serif; padding: 20px; }
-      table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-      th, td { border: 1px solid #333; padding: 8px; text-align: left; }
-      th { background-color: #f0f0f0; font-weight: bold; }
-      .header { border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
-      .footer { margin-top: 30px; border-top: 1px solid #999; padding-top: 10px; }
-      .checkbox { width: 30px; }</style></head><body>${content.innerHTML}</body></html>`);
+      <style>
+      @media print { @page { size: A4 portrait; margin: 10mm; } }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif; padding: 10px; font-size: 14px; }
+      .header { border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+      .title { font-size: 20px; font-weight: bold; letter-spacing: 1px; }
+      .meta { display: flex; gap: 16px; font-size: 13px; }
+      .meta span { white-space: nowrap; }
+      .meta strong { font-size: 14px; }
+      table { width: 100%; border-collapse: collapse; border: 1.5px solid #000; margin-top: 8px; }
+      th { background: #000; color: #fff; padding: 6px 8px; text-align: left; font-size: 13px; white-space: nowrap; }
+      td { border-bottom: 1px solid #ddd; padding: 6px 8px; font-size: 14px; line-height: 1.4; vertical-align: middle; }
+      tr:last-child td { border-bottom: none; }
+      .chk { width: 24px; text-align: center; font-size: 18px; }
+      .code { width: 50px; text-align: center; font-size: 14px; }
+      .qty { width: 45px; text-align: center; font-weight: bold; font-size: 18px; }
+      .cfm { width: 60px; }
+      .pname { font-size: 14px; } .pname-ja { font-size: 12px; color: #666; }
+      .footer { margin-top: 12px; padding-top: 8px; border-top: 1.5px solid #ccc; display: flex; gap: 12px; align-items: flex-start; }
+      .sign-box { border: 1px solid #aaa; border-radius: 4px; padding: 8px 12px; }
+      .sign-box p { font-size: 12px; margin: 2px 0; }
+      .sign-line { border-bottom: 1px solid #000; height: 25px; width: 140px; }
+      .notes { border: 1px dashed #ccc; border-radius: 4px; padding: 6px 10px; flex: 1; font-size: 12px; color: #999; }
+      </style></head><body>${content.innerHTML}</body></html>`);
     printWindow.document.close(); printWindow.focus();
     setTimeout(() => { printWindow.print(); printWindow.close(); }, 250);
   };
@@ -358,32 +375,75 @@ export default function OrdersPFPage() {
               </div>
             </div>
             <div ref={printRef} className="p-8">
-              <div className="header mb-6">
-                <h1 className="text-2xl font-bold mb-2">ピッキングリスト / PICKING LIST</h1>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div><p><strong>注文番号:</strong> {showPickingList.orderNumber}</p><p><strong>注文日:</strong> {new Date(showPickingList.createdAt).toLocaleDateString('ja-JP')}</p></div>
-                  <div><p><strong>顧客:</strong> {showPickingList.customer?.lastName} {showPickingList.customer?.firstName}</p></div>
+              <div className="header">
+                <span className="title">ピッキングリスト / PICKING LIST</span>
+                <div className="meta">
+                  <span><strong>{showPickingList.orderNumber}</strong></span>
+                  <span>{new Date(showPickingList.createdAt).toLocaleDateString('ja-JP')}</span>
+                  <span>{showPickingList.customer?.lastName} {showPickingList.customer?.firstName}</span>
                 </div>
               </div>
-              <table className="w-full">
-                <thead><tr><th className="checkbox">☐</th><th className="text-left">品番</th><th className="text-left">製品名</th><th className="text-center">数量</th><th className="text-left">確認</th></tr></thead>
-                <tbody>
-                  {showPickingList.items?.map((item) => (
-                    <tr key={item.id}>
-                      <td className="checkbox">☐</td>
-                      <td>{item.product?.hinban || (item as any).hinban || '-'}</td>
-                      <td><div>{item.product?.namePt || (item as any).namePt}</div><div className="text-xs text-gray-600">{item.product?.nameJa || (item as any).nameJa}</div></td>
-                      <td className="text-center font-bold">{item.quantity}</td>
-                      <td>___________</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {(() => {
+                const items = showPickingList.items || [];
+                const dryItems = items.filter((item: any) => item.product?.storageType === 'AMBIENT');
+                const coldItems = items.filter((item: any) => item.product?.storageType !== 'AMBIENT');
+                return (
+                  <>
+                    {dryItems.length > 0 && (
+                      <>
+                        <div style={{background:'#f59e0b',color:'#fff',padding:'6px 12px',borderRadius:'6px 6px 0 0',fontWeight:'bold',fontSize:'15px',marginTop:'8px',display:'flex',alignItems:'center',gap:'8px'}}>
+                          <span style={{fontSize:'18px'}}>📦</span> 常温 / SECOS ({dryItems.length} itens)
+                        </div>
+                        <table className="w-full" style={{marginTop:'0'}}>
+                          <thead><tr><th className="chk">☐</th><th className="code">品番</th><th>製品名 / Produto</th><th className="qty">数量</th><th className="cfm">確認</th></tr></thead>
+                          <tbody>
+                            {dryItems.map((item: any) => (
+                              <tr key={item.id}>
+                                <td className="chk">☐</td>
+                                <td className="code">{item.product?.hinban || item.hinban || '-'}</td>
+                                <td><span className="pname">{item.product?.namePt || item.namePt}</span> <span className="pname-ja">{item.product?.nameJa || item.nameJa}</span></td>
+                                <td className="qty">{item.quantity}</td>
+                                <td className="cfm"></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </>
+                    )}
+                    {coldItems.length > 0 && (
+                      <>
+                        <div style={{background:'#3b82f6',color:'#fff',padding:'6px 12px',borderRadius:'6px 6px 0 0',fontWeight:'bold',fontSize:'15px',marginTop: dryItems.length > 0 ? '20px' : '8px',display:'flex',alignItems:'center',gap:'8px',pageBreakBefore: dryItems.length > 0 ? 'always' : 'auto'}}>
+                          <span style={{fontSize:'18px'}}>❄️</span> 冷凍・冷蔵 / REFRIGERADOS & CONGELADOS ({coldItems.length} itens)
+                        </div>
+                        <table className="w-full" style={{marginTop:'0'}}>
+                          <thead><tr><th className="chk">☐</th><th className="code">品番</th><th>製品名 / Produto</th><th className="qty">数量</th><th className="cfm">確認</th></tr></thead>
+                          <tbody>
+                            {coldItems.map((item: any) => (
+                              <tr key={item.id}>
+                                <td className="chk">☐</td>
+                                <td className="code">{item.product?.hinban || item.hinban || '-'}</td>
+                                <td><span className="pname">{item.product?.namePt || item.namePt}</span> <span className="pname-ja">{item.product?.nameJa || item.nameJa}</span></td>
+                                <td className="qty">{item.quantity}</td>
+                                <td className="cfm"></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </>
+                    )}
+                  </>
+                );
+              })()}
               <div className="footer mt-8">
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div><p><strong>分離者:</strong></p><p className="mt-2">署名: _______________</p></div>
-                  <div><p><strong>検査者:</strong></p><p className="mt-2">署名: _______________</p></div>
-                  <div><p><strong>梱包者:</strong></p><p className="mt-2">署名: _______________</p></div>
+                <div className="flex items-end justify-between">
+                  <div className="sign-box" style={{border:'1px solid #999',borderRadius:'6px',padding:'10px 20px',minWidth:'220px'}}>
+                    <p className="text-xs text-gray-500 mb-1">梱包者 / Embalador</p>
+                    <p className="text-sm mb-2">署名 / Assinatura:</p>
+                    <div style={{borderBottom:'1px solid #000',height:'25px',width:'180px'}}></div>
+                  </div>
+                  <div className="notes" style={{border:'1px dashed #ccc',borderRadius:'4px',padding:'8px',minHeight:'40px',flex:1,marginLeft:'20px'}}>
+                    <p className="text-xs text-gray-400">備考 / Observações:</p>
+                  </div>
                 </div>
               </div>
             </div>

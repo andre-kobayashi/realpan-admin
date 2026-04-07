@@ -323,11 +323,8 @@ export default function CustomerPJDetailPage() {
               </div>
               <h3 className="font-semibold text-gray-900 flex items-center gap-2 mt-6"><Banknote className="h-4 w-4" /> 請求設定 / Faturamento</h3>
               <div className="bg-gray-50 rounded-xl p-4 space-y-3 text-sm">
-                <div><label className="text-xs text-gray-500">締めサイクル / Ciclo</label><p>{customer.billingCycle === 'WEEKLY' ? '週次 / Semanal' : customer.billingCycle === 'BIWEEKLY' ? '隔週 / Quinzenal' : '月次 / Mensal'}</p></div>
-                {(!customer.billingCycle || customer.billingCycle === 'MONTHLY') && <div><label className="text-xs text-gray-500">締め日 / Fechamento</label><p>{!customer.billingClosingDay || customer.billingClosingDay === 31 ? '月末 / Fim do mês' : `${customer.billingClosingDay}日`}</p></div>}
-                {customer.billingCycle === 'BIWEEKLY' && <div><label className="text-xs text-gray-500">締め日 / Fechamento</label><p>15日・月末 / Dia 15 e fim do mês</p></div>}
-                {customer.billingCycle === 'WEEKLY' && <div><label className="text-xs text-gray-500">締め日 / Fechamento</label><p>毎週土曜日 / Sábado</p></div>}
-                <div><label className="text-xs text-gray-500">支払日 / Dia de Pagamento</label><p>{!customer.billingDueDay || customer.billingDueDay === 31 ? '月末 / Fim do mês' : `${customer.billingDueDay}日 / Dia ${customer.billingDueDay}`}</p></div>
+                <div><label className="text-xs text-gray-500">締め日 / Fechamento</label><p>{!customer.billingClosingDay || customer.billingClosingDay === 31 ? '月末 / Fim do mês' : `${customer.billingClosingDay}日`}</p></div>
+                <div><label className="text-xs text-gray-500">支払期限 / Vencimento</label><p>翌月{customer.billingDueDay || 10}日 / Dia {customer.billingDueDay || 10}</p></div>
                 <div><label className="text-xs text-gray-500">支払サイト / Prazo</label><p>{customer.paymentTermDays || customer.paymentTerms || 30}日 / dias</p></div>
                 {customer.creditLimit && <div><label className="text-xs text-gray-500">与信限度額 / Limite</label><p className="font-bold">¥{customer.creditLimit.toLocaleString()}</p></div>}
               </div></div>

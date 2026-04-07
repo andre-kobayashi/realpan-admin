@@ -96,30 +96,28 @@ export default function OrdersPJPage() {
     printWindow.document.write(`
       <html><head><title>ピッキングリスト - ${showPickingList?.orderNumber}</title>
       <style>
-      @media print { @page { size: A4 portrait; margin: 10mm; } }
+      @media print { @page { size: A4 portrait; margin: 6mm; } }
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif; padding: 10px; font-size: 14px; }
-      .header { border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-      .title { font-size: 20px; font-weight: bold; letter-spacing: 1px; }
-      .meta { display: flex; gap: 16px; font-size: 13px; }
+      body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif; padding: 5px; font-size: 8px; }
+      .header { border-bottom: 1.5px solid #000; padding-bottom: 3px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+      .title { font-size: 11px; font-weight: bold; letter-spacing: 1px; }
+      .meta { display: flex; gap: 12px; font-size: 8px; }
       .meta span { white-space: nowrap; }
-      .meta strong { font-size: 14px; }
-      table { width: 100%; border-collapse: collapse; border: 1.5px solid #000; margin-top: 8px; }
-      th { background: #000; color: #fff; padding: 6px 8px; text-align: left; font-size: 13px; }
-      td { border-bottom: 1px solid #ddd; padding: 6px 8px; font-size: 14px; line-height: 1.4; vertical-align: middle; }
+      .meta strong { font-size: 9px; }
+      table { width: 100%; border-collapse: collapse; border: 1px solid #000; margin-top: 3px; }
+      th { background: #000; color: #fff; padding: 2px 4px; text-align: left; font-size: 8px; }
+      td { border-bottom: 1px solid #ddd; padding: 2px 4px; font-size: 8px; line-height: 1.2; vertical-align: middle; }
       tr:last-child td { border-bottom: none; }
-      .chk { width: 24px; text-align: center; font-size: 18px; }
-      .code { width: 50px; text-align: center; font-size: 14px; }
-      .qty { width: 45px; text-align: center; font-weight: bold; font-size: 18px; }
-      .cfm { width: 60px; }
-      .pname { font-size: 14px; } .pname-ja { font-size: 12px; color: #666; }
-      .footer { margin-top: 12px; padding-top: 8px; border-top: 1.5px solid #ccc; display: flex; gap: 12px; align-items: flex-start; }
-      .sign-box { border: 1px solid #aaa; border-radius: 4px; padding: 8px 12px; }
-      .sign-box p { font-size: 12px; margin: 2px 0; }
-      .sign-line { border-bottom: 1px solid #000; height: 25px; width: 140px; }
-      .notes { border: 1px dashed #ccc; border-radius: 4px; padding: 6px 10px; flex: 1; font-size: 12px; color: #999; }
-      .section-header { page-break-before: always; }
-      @media print { .page-break { page-break-before: always; } }
+      .chk { width: 16px; text-align: center; font-size: 10px; }
+      .code { width: 32px; text-align: center; }
+      .qty { width: 28px; text-align: center; font-weight: bold; font-size: 10px; }
+      .cfm { width: 50px; }
+      .pname { font-size: 8px; } .pname-ja { font-size: 7px; color: #666; }
+      .footer { margin-top: 6px; padding-top: 4px; border-top: 1px solid #ccc; display: flex; gap: 8px; align-items: flex-start; }
+      .sign-box { border: 1px solid #aaa; border-radius: 3px; padding: 4px 8px; }
+      .sign-box p { font-size: 7px; margin: 1px 0; }
+      .sign-line { border-bottom: 1px solid #000; height: 15px; width: 100px; }
+      .notes { border: 1px dashed #ccc; border-radius: 3px; padding: 3px 5px; flex: 1; font-size: 7px; color: #999; }
       </style></head>
       <body>${content.innerHTML}</body></html>`);
     printWindow.document.close();
@@ -462,63 +460,23 @@ export default function OrdersPJPage() {
                   <span>{showPickingList.customer?.companyName || `${showPickingList.customer?.lastName} ${showPickingList.customer?.firstName}`}</span>
                 </div>
               </div>
-              {(() => {
-                const items = showPickingList.items || [];
-                const dryItems = items.filter((item: any) => item.product?.storageType === 'AMBIENT');
-                const coldItems = items.filter((item: any) => item.product?.storageType !== 'AMBIENT');
-                return (
-                  <>
-                    {dryItems.length > 0 && (
-                      <>
-                        <div style={{background:'#f59e0b',color:'#fff',padding:'6px 12px',borderRadius:'6px 6px 0 0',fontWeight:'bold',fontSize:'15px',marginTop:'8px',display:'flex',alignItems:'center',gap:'8px'}}>
-                          <span style={{fontSize:'18px'}}>📦</span> 常温 / SECOS ({dryItems.length} itens)
-                        </div>
-                        <table className="w-full" style={{marginTop:'0'}}>
-                          <thead><tr>
-                            <th className="chk">☐</th><th className="code">品番</th><th>製品名 / Produto</th>
-                            <th className="qty">数量</th><th className="cfm">確認</th>
-                          </tr></thead>
-                          <tbody>
-                            {dryItems.map((item: any) => (
-                              <tr key={item.id}>
-                                <td className="chk">☐</td>
-                                <td className="code">{item.product?.hinban || item.hinban || '-'}</td>
-                                <td><span className="pname">{item.product?.namePt || item.namePt}</span> <span className="pname-ja">{item.product?.nameJa || item.nameJa}</span></td>
-                                <td className="qty">{item.quantity}</td>
-                                <td className="cfm"></td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </>
-                    )}
-                    {coldItems.length > 0 && (
-                      <>
-                        <div style={{background:'#3b82f6',color:'#fff',padding:'6px 12px',borderRadius:'6px 6px 0 0',fontWeight:'bold',fontSize:'15px',marginTop: dryItems.length > 0 ? '20px' : '8px',display:'flex',alignItems:'center',gap:'8px',pageBreakBefore: dryItems.length > 0 ? 'always' : 'auto'}}>
-                          <span style={{fontSize:'18px'}}>❄️</span> 冷凍・冷蔵 / REFRIGERADOS & CONGELADOS ({coldItems.length} itens)
-                        </div>
-                        <table className="w-full" style={{marginTop:'0'}}>
-                          <thead><tr>
-                            <th className="chk">☐</th><th className="code">品番</th><th>製品名 / Produto</th>
-                            <th className="qty">数量</th><th className="cfm">確認</th>
-                          </tr></thead>
-                          <tbody>
-                            {coldItems.map((item: any) => (
-                              <tr key={item.id}>
-                                <td className="chk">☐</td>
-                                <td className="code">{item.product?.hinban || item.hinban || '-'}</td>
-                                <td><span className="pname">{item.product?.namePt || item.namePt}</span> <span className="pname-ja">{item.product?.nameJa || item.nameJa}</span></td>
-                                <td className="qty">{item.quantity}</td>
-                                <td className="cfm"></td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </>
-                    )}
-                  </>
-                );
-              })()}
+              <table className="w-full">
+                <thead><tr>
+                  <th className="chk">☐</th><th className="code">品番</th><th>製品名 / Produto</th>
+                  <th className="qty">数量</th><th className="cfm">確認</th>
+                </tr></thead>
+                <tbody>
+                  {showPickingList.items?.map((item) => (
+                    <tr key={item.id}>
+                      <td className="chk">☐</td>
+                      <td className="code">{item.product?.hinban || (item as any).hinban || '-'}</td>
+                      <td><span className="pname">{item.product?.namePt || (item as any).namePt}</span> <span className="pname-ja">{item.product?.nameJa || (item as any).nameJa}</span></td>
+                      <td className="qty">{item.quantity}</td>
+                      <td className="cfm"></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
               <div className="footer mt-8">
                 <div className="flex items-end justify-between">
                   <div className="sign-box" style={{border:'1px solid #999',borderRadius:'6px',padding:'10px 20px',minWidth:'220px'}}>

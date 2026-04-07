@@ -204,7 +204,7 @@ export default function EditCarrierPage() {
   };
   const loadDefaultDaibikiRates = () => setDaibikiRates([...DEFAULT_DAIBIKI_RATES]);
   const updateDaibikiRate = (i: number, field: keyof DaibikiRate, value: number) => {
-    setDaibikiRates(prev => prev.map((rate, idx) => idx === i ? { ...rate, [field]: value } : rate));
+    const r = [...daibikiRates]; r[i][field] = value; setDaibikiRates(r);
   };
   const removeDaibikiRate = (i: number) => setDaibikiRates(daibikiRates.filter((_, idx) => idx !== i));
 
@@ -219,7 +219,7 @@ export default function EditCarrierPage() {
         deliveryTimeSlots: timeSlots, minOrderAmount: formData.minOrderAmount ? parseInt(formData.minOrderAmount) : null,
         maxWeightGrams: formData.maxWeightGrams ? parseInt(formData.maxWeightGrams) : null, sortOrder: parseInt(formData.sortOrder) || 0,
         daibikiEnabled,
-        daibikiRates: [...daibikiRates].sort((a, b) => a.maxAmount - b.maxAmount),
+        daibikiRates: daibikiRates.sort((a, b) => a.maxAmount - b.maxAmount),
         daibikiTaxRate,
       });
 
@@ -366,13 +366,13 @@ export default function EditCarrierPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {daibikiRates.map((rate, i) => (
+                    {daibikiRates.sort((a, b) => a.maxAmount - b.maxAmount).map((rate, i) => (
                       <tr key={i} className="hover:bg-yellow-50/50">
                         <td className="px-4 py-2">
                           <div className="flex items-center gap-1">
                             <span className="text-gray-500 text-xs">〜</span>
                             <span className="text-gray-400 text-xs">¥</span>
-                            <input type="number" min="0" step="1" value={rate.maxAmount}
+                            <input type="number" min="0" step="1000" value={rate.maxAmount}
                               onChange={e => updateDaibikiRate(i, 'maxAmount', parseInt(e.target.value) || 0)}
                               className="w-28 px-2 py-1.5 border border-gray-200 rounded-lg text-sm text-right font-mono" />
                           </div>

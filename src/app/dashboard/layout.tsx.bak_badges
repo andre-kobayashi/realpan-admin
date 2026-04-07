@@ -21,7 +21,7 @@ import {
   LucideIcon,
   Truck,
   UserCircle,
-Image as LucideImage, FileText, Newspaper, Users, BarChart3, ClipboardList, Receipt, Wallet, Store } from 'lucide-react';
+Image as LucideImage, FileText, Newspaper, Users } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 
@@ -42,44 +42,21 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', labelJa: 'ダッシュボード', href: '/dashboard' },
-
-  // ── Vendas / 販売 ──
+  { icon: Package, label: 'Produtos', labelJa: '製品', href: '/dashboard/products' },
+  { icon: Gift, label: 'Kits Premium', labelJa: 'キット', href: '/dashboard/kits' },
+  { icon: DollarSign, label: 'Financeiro', labelJa: '財務管理', href: '/dashboard/finance' },
+  { icon: ShoppingCart, label: 'Pedidos Varejo', labelJa: '個人注文', href: '/dashboard/orders-pf' },
+  { icon: Building, label: 'Pedidos Atacado', labelJa: '法人注文', href: '/dashboard/orders-pj' },
+  { icon: FolderTree, label: 'Categorias', labelJa: 'カテゴリー', href: '/dashboard/categories' },
   {
-    icon: ShoppingCart,
-    label: 'Vendas',
-    labelJa: '販売',
+    icon: Users,
+    label: 'Clientes',
+    labelJa: '顧客',
     submenu: [
-      { icon: Store, label: 'Pedidos Varejo', labelJa: '個人注文', href: '/dashboard/orders-pf' },
-      { icon: Building, label: 'Pedidos Atacado', labelJa: '法人注文', href: '/dashboard/orders-pj' },
+      { icon: User, label: 'Varejo', labelJa: '個人', href: '/dashboard/customers-pf' },
+      { icon: Building, label: 'Atacado', labelJa: '法人', href: '/dashboard/customers-pj' },
     ]
   },
-
-  // ── Cadastros / マスタ ──
-  {
-    icon: ClipboardList,
-    label: 'Cadastros',
-    labelJa: 'マスタ',
-    submenu: [
-      { icon: Package, label: 'Produtos', labelJa: '製品', href: '/dashboard/products' },
-      { icon: Gift, label: 'Kits Premium', labelJa: 'キット', href: '/dashboard/kits' },
-      { icon: FolderTree, label: 'Categorias', labelJa: 'カテゴリー', href: '/dashboard/categories' },
-      { icon: User, label: 'Clientes Varejo', labelJa: '個人顧客', href: '/dashboard/customers-pf' },
-      { icon: Building, label: 'Clientes Atacado', labelJa: '法人顧客', href: '/dashboard/customers-pj' },
-    ]
-  },
-
-  // ── Contabilidade / 経理 ──
-  {
-    icon: Wallet,
-    label: 'Contabilidade',
-    labelJa: '経理',
-    submenu: [
-      { icon: BarChart3, label: 'Financeiro', labelJa: '財務管理', href: '/dashboard/finance' },
-      { icon: Receipt, label: 'Faturamento', labelJa: '請求管理', href: '/dashboard/finance/invoicing' },
-    ]
-  },
-
-  // ── Páginas / ページ ──
   {
     icon: FileText,
     label: 'Páginas',
@@ -89,11 +66,9 @@ const menuItems: MenuItem[] = [
       { icon: Newspaper, label: 'Blog', labelJa: 'ブログ', href: '/dashboard/blog' },
     ]
   },
-
-  // ── Configurações / 設定 ──
-  {
-    icon: Settings,
-    label: 'Configurações',
+  { 
+    icon: Settings, 
+    label: 'Configurações', 
     labelJa: '設定',
     submenu: [
       { icon: UserCircle, label: 'Usuários', labelJa: 'ユーザー', href: '/dashboard/users' },
@@ -113,6 +88,8 @@ export default function DashboardLayout({
   const [user, setUser] = useState<Partial<UserType>>({ firstName: '', lastName: '' });
   const [openSubmenus, setOpenSubmenus] = useState<{ [key: number]: boolean }>({});
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [pendingPF, setPendingPF] = useState(0);
+  const [pendingPJ, setPendingPJ] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
 
@@ -126,7 +103,14 @@ export default function DashboardLayout({
           setUnreadCount(data.unreadCount || 0);
         }
       } catch (e) { /* silent - API might be restarting */ }
-
+      try {
+        const { data: pfData } = await api.get('/api/orders?status=PENDING&customerType=INDIVIDUAL&limit=1');
+        setPendingPF(pfData.pagination?.total || pfData.data?.length || 0);
+      } catch {}
+      try {
+        const { data: pjData } = await api.get('/api/orders?status=PENDING&customerType=CORPORATE&limit=1');
+        setPendingPJ(pjData.pagination?.total || pjData.data?.length || 0);
+      } catch {}
     };
     fetchNotifs();
     const interval = setInterval(fetchNotifs, 300000); // Poll every 5 min
@@ -279,8 +263,12 @@ export default function DashboardLayout({
                   <div className="text-sm font-medium">{item.label}</div>
                   <div className="text-xs opacity-75">{item.labelJa}</div>
                 </div>
-
-
+                {item.href === '/dashboard/orders-pf' && pendingPF > 0 && (
+                  <span className="bg-red-500 text-white text-[10px] font-bold min-w-[20px] h-5 flex items-center justify-center rounded-full px-1.5">{pendingPF}</span>
+                )}
+                {item.href === '/dashboard/orders-pj' && pendingPJ > 0 && (
+                  <span className="bg-red-500 text-white text-[10px] font-bold min-w-[20px] h-5 flex items-center justify-center rounded-full px-1.5">{pendingPJ}</span>
+                )}
               </Link>
             );
           })}

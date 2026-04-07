@@ -13,39 +13,6 @@ function generatePassword(): string {
   return pwd;
 }
 
-
-function formatJapanesePhone(value: string): string {
-  const digits = value.replace(/\D/g, '');
-  if (!digits.startsWith('0')) return value;
-  const n = digits.length;
-  // Celular 11 dígitos: 080-1234-5678
-  if (n <= 11 && n > 7 && ['08','09','07','05'].includes(digits.slice(0,2))) {
-    if (n <= 3) return digits;
-    if (n <= 7) return digits.slice(0,3) + '-' + digits.slice(3);
-    return digits.slice(0,3) + '-' + digits.slice(3,7) + '-' + digits.slice(7,11);
-  }
-  // Fixo 10 dígitos
-  if (n <= 10) {
-    // Free dial
-    if (digits.startsWith('0120') || digits.startsWith('0800')) {
-      if (n <= 4) return digits;
-      if (n <= 7) return digits.slice(0,4) + '-' + digits.slice(4);
-      return digits.slice(0,4) + '-' + digits.slice(4,7) + '-' + digits.slice(7,10);
-    }
-    // Fixo 03/06
-    if (['03','06'].includes(digits.slice(0,2))) {
-      if (n <= 2) return digits;
-      if (n <= 6) return digits.slice(0,2) + '-' + digits.slice(2);
-      return digits.slice(0,2) + '-' + digits.slice(2,6) + '-' + digits.slice(6,10);
-    }
-    // Fixo 3 dígitos (053, 054, etc)
-    if (n <= 3) return digits;
-    if (n <= 6) return digits.slice(0,3) + '-' + digits.slice(3);
-    return digits.slice(0,3) + '-' + digits.slice(3,6) + '-' + digits.slice(6,10);
-  }
-  return value;
-}
-
 const PAYMENT_METHODS = [
   { value: 'INVOICE', label: '請求書払い', labelPt: 'Faturamento mensal', icon: '📄' },
   { value: 'DAIBIKI', label: '代引き', labelPt: 'Pagamento na entrega', icon: '🚚' },
@@ -295,7 +262,7 @@ export default function NewCustomerPJPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Telefone *</label>
                   <input type="tel" required value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: formatJapanesePhone(e.target.value) })}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                     placeholder="053-000-0000" />
                 </div>
@@ -303,7 +270,7 @@ export default function NewCustomerPJPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Telefone Alternativo</label>
                 <input type="tel" value={formData.phoneAlt}
-                  onChange={(e) => setFormData({ ...formData, phoneAlt: formatJapanesePhone(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, phoneAlt: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                   placeholder="090-0000-0000" />
               </div>

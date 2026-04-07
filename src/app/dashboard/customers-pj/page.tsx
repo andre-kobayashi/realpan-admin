@@ -134,7 +134,7 @@ export default function CustomersPJPage() {
       {filteredCustomers.length === 0 ? (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
           <Building className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum cliente PJ encontrado</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum cliente encontrado</h3>
           <p className="text-gray-500 mb-6">法人顧客が見つかりません</p>
           <button
             onClick={() => router.push('/dashboard/customers-pj/new')}

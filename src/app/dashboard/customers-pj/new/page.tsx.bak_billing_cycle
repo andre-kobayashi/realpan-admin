@@ -13,39 +13,6 @@ function generatePassword(): string {
   return pwd;
 }
 
-
-function formatJapanesePhone(value: string): string {
-  const digits = value.replace(/\D/g, '');
-  if (!digits.startsWith('0')) return value;
-  const n = digits.length;
-  // Celular 11 dígitos: 080-1234-5678
-  if (n <= 11 && n > 7 && ['08','09','07','05'].includes(digits.slice(0,2))) {
-    if (n <= 3) return digits;
-    if (n <= 7) return digits.slice(0,3) + '-' + digits.slice(3);
-    return digits.slice(0,3) + '-' + digits.slice(3,7) + '-' + digits.slice(7,11);
-  }
-  // Fixo 10 dígitos
-  if (n <= 10) {
-    // Free dial
-    if (digits.startsWith('0120') || digits.startsWith('0800')) {
-      if (n <= 4) return digits;
-      if (n <= 7) return digits.slice(0,4) + '-' + digits.slice(4);
-      return digits.slice(0,4) + '-' + digits.slice(4,7) + '-' + digits.slice(7,10);
-    }
-    // Fixo 03/06
-    if (['03','06'].includes(digits.slice(0,2))) {
-      if (n <= 2) return digits;
-      if (n <= 6) return digits.slice(0,2) + '-' + digits.slice(2);
-      return digits.slice(0,2) + '-' + digits.slice(2,6) + '-' + digits.slice(6,10);
-    }
-    // Fixo 3 dígitos (053, 054, etc)
-    if (n <= 3) return digits;
-    if (n <= 6) return digits.slice(0,3) + '-' + digits.slice(3);
-    return digits.slice(0,3) + '-' + digits.slice(3,6) + '-' + digits.slice(6,10);
-  }
-  return value;
-}
-
 const PAYMENT_METHODS = [
   { value: 'INVOICE', label: '請求書払い', labelPt: 'Faturamento mensal', icon: '📄' },
   { value: 'DAIBIKI', label: '代引き', labelPt: 'Pagamento na entrega', icon: '🚚' },
@@ -78,7 +45,6 @@ export default function NewCustomerPJPage() {
     streetAddress: '',
     building: '',
     discountRate: '0.15',
-    billingCycle: 'MONTHLY',
     billingClosingDay: '31',
     billingDueDay: '10',
     paymentTerms: '30',
@@ -158,7 +124,6 @@ export default function NewCustomerPJPage() {
         streetAddress: formData.streetAddress || null,
         building: formData.building || null,
         discountRate: parseFloat(formData.discountRate),
-        billingCycle: formData.billingCycle,
         billingClosingDay: parseInt(formData.billingClosingDay),
         billingDueDay: parseInt(formData.billingDueDay),
         paymentTerms: parseInt(formData.paymentTerms),
@@ -295,7 +260,7 @@ export default function NewCustomerPJPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Telefone *</label>
                   <input type="tel" required value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: formatJapanesePhone(e.target.value) })}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                     placeholder="053-000-0000" />
                 </div>
@@ -303,7 +268,7 @@ export default function NewCustomerPJPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Telefone Alternativo</label>
                 <input type="tel" value={formData.phoneAlt}
-                  onChange={(e) => setFormData({ ...formData, phoneAlt: formatJapanesePhone(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, phoneAlt: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                   placeholder="090-0000-0000" />
               </div>
@@ -491,83 +456,29 @@ export default function NewCustomerPJPage() {
                   <h3 className="font-semibold text-gray-900">Faturamento / 請求</h3>
                 </div>
                 <div className="space-y-4">
-                  {/* Ciclo de Fechamento */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Ciclo de Fechamento / 締めサイクル</label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        { value: 'WEEKLY', label: '週次', labelPt: 'Semanal' },
-                        { value: 'BIWEEKLY', label: '隔週', labelPt: 'Quinzenal' },
-                        { value: 'MONTHLY', label: '月次', labelPt: 'Mensal' },
-                      ].map(cycle => (
-                        <label key={cycle.value} className={`flex flex-col items-center p-2.5 border-2 rounded-lg cursor-pointer transition-all text-center ${
-                          formData.billingCycle === cycle.value ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:border-gray-300'
-                        }`}>
-                          <input type="radio" name="billingCycle" value={cycle.value}
-                            checked={formData.billingCycle === cycle.value}
-                            onChange={(e) => setFormData({ ...formData, billingCycle: e.target.value })}
-                            className="sr-only" />
-                          <span className="font-medium text-sm text-gray-900">{cycle.label}</span>
-                          <span className="text-[10px] text-gray-500">{cycle.labelPt}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Dia de Fechamento - só para mensal */}
-                  {formData.billingCycle === 'MONTHLY' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Dia de Fechamento / 締め日</label>
-                      <select value={formData.billingClosingDay} onChange={(e) => setFormData({ ...formData, billingClosingDay: e.target.value })}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
-                        <option value="31">月末 / Fim do Mês</option>
-                        <option value="5">5日 / Dia 5</option>
-                        <option value="10">10日 / Dia 10</option>
-                        <option value="15">15日 / Dia 15</option>
-                        <option value="20">20日 / Dia 20</option>
-                        <option value="25">25日 / Dia 25</option>
-                      </select>
-                    </div>
-                  )}
-
-                  {formData.billingCycle === 'BIWEEKLY' && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <p className="text-xs text-blue-800">
-                        📅 Fechamento quinzenal: dia 15 e último dia do mês.<br/>
-                        隔週締め：15日と月末に締め切り
-                      </p>
-                    </div>
-                  )}
-
-                  {formData.billingCycle === 'WEEKLY' && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <p className="text-xs text-blue-800">
-                        📅 Fechamento semanal: toda semana (sábado).<br/>
-                        週次締め：毎週土曜日に締め切り
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Dia de Pagamento */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Dia de Pagamento / 支払日</label>
-                    <select value={formData.billingDueDay} onChange={(e) => setFormData({ ...formData, billingDueDay: e.target.value })}
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Dia de Fechamento / 締め日</label>
+                    <select value={formData.billingClosingDay} onChange={(e) => setFormData({ ...formData, billingClosingDay: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
-                      <option value="10">10日 / Dia 10</option>
-                      <option value="15">15日 / Dia 15</option>
-                      <option value="31">月末 / Dia 31 (Fim do mês)</option>
+                      <option value="31">Fim do Mês (31)</option>
+                      <option value="5">Dia 5</option><option value="10">Dia 10</option>
+                      <option value="15">Dia 15</option><option value="20">Dia 20</option><option value="25">Dia 25</option>
                     </select>
                   </div>
-
-                  {/* Prazo de Pagamento */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Prazo de Pagamento / 支払サイト</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Dia de Vencimento / 支払期限</label>
+                    <select value={formData.billingDueDay} onChange={(e) => setFormData({ ...formData, billingDueDay: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                      <option value="10">Dia 10 do mês seguinte</option><option value="15">Dia 15</option>
+                      <option value="20">Dia 20</option><option value="25">Dia 25</option><option value="30">Dia 30</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Prazo de Pagamento</label>
                     <select value={formData.paymentTerms} onChange={(e) => setFormData({ ...formData, paymentTerms: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
-                      <option value="15">15日 / 15 dias</option>
-                      <option value="30">30日 / 30 dias</option>
-                      <option value="45">45日 / 45 dias</option>
-                      <option value="60">60日 / 60 dias</option>
+                      <option value="15">15 dias</option><option value="30">30 dias</option>
+                      <option value="45">45 dias</option><option value="60">60 dias</option>
                     </select>
                   </div>
                 </div>
